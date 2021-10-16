@@ -1,5 +1,5 @@
 ##########################
-## Binance trading script
+# Binance trading script #
 ##########################
 
 """
@@ -238,6 +238,10 @@ def WS_message_handler(msg):
         print(msg)
         print(err)
 
+#################
+# Main Function #
+#################
+
 def main(client,runningTime=120):
     global candleList
 
@@ -263,3 +267,4 @@ if __name__ == '__main__':
     client = Spot(key=API_KEY, secret=API_SECRET)
     candleList = []
     main(client,runningTime=300)
+    
