@@ -7,6 +7,7 @@ IF USING WEBSOCKETS FOLLOW INSTRUCTIONS BELOW
 https://dev.binance.vision/t/cant-run-any-websocket-example-on-binance-connector-python-on-windows/4957/2
 """
 
+import os
 import time
 
 import matplotlib
@@ -19,6 +20,8 @@ from binance.websocket.spot.websocket_client import \
     SpotWebsocketClient as WebsocketClient
 
 from config import API_KEY, API_SECRET
+
+cd = os.getcwd()+'\\'
 
 ########################
 # Financial Indicators #
@@ -234,9 +237,12 @@ def WS_message_handler(msg):
         if changed:
             candleDF = WScandleToDF(candleList)
             print(candleDF)
+            # Write to log file
+            with open(cd+'CandleSticks.txt','w') as f:
+                dfAsString = candleDF.to_string(header=True, index=False)
+                f.write(dfAsString)
     except Exception as err:
-        print(msg)
-        print(err)
+        print(msg,err)
 
 #################
 # Main Function #
