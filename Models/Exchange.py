@@ -1,127 +1,187 @@
-##############################
-# WebSocket Helper Functions #
-##############################
+##################
+# Exchange Class #
+##################
 
-import numpy as np
-import pandas as pd
-
-import os
 import time
 
-import matplotlib
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
+
 from binance.spot import Spot
 from binance.websocket.spot.websocket_client import SpotWebsocketClient
-from config import API_KEY, API_SECRET
+from matplotlib.animation import FuncAnimation
+
 
 class Exchange():
 
-    def __init__(self,symbol,WShandler,url=''):
-        self.api = API_KEY
-        self.secret = API_SECRET
-        self.url = url if url else "wss://stream.binance.com:9443"
+    def __init__(self,api,secret,url='',commission=0.001):
+        self.url = url if url else 'wss://stream.binance.com:9443/ws'
+        self.commission = commission
 
-        self.Client = Spot(key=self.api, secret=self.secret)
-        self.WebsocketClient = SpotWebsocketClient(stream_url=url)
+        self.Client = Spot(key=api, secret=secret)
+        self.WebsocketClient = SpotWebsocketClient(stream_url=self.url)
 
+        self.symbol = ''
         self.Trades = []
+        self.Position = 0
+        self.CashPosition = 0
 
-    def startWS(self):
-        pass
-
-def refreshCandles(candle,candleList,maxLen=500):
-    """
-    Recieve candlestick data and append to candlestick list
-    if it is new candlestick.
-    candle: Candlestick dictionary.
-    candleList: List of candlesticks.
-    maxLen: Maximum length of list. As new candlesticks enter,
-    it removes old candlesticks.
-    """
-    changed = False
-    if candle['k']['x'] == True:
-        if candleList:
-            if candle['k']['t'] != candleList[-1]['t']:
-                candleList.append(candle['k'])
-                changed = True
-                if len(candleList) > maxLen:
-                    candleList.pop(0)
+    def init_portfolio(self,symbol,paper_trade):
+        self.symbol = symbol
+        if paper_trade:
+            self.Position = 0.1
+            self.CashPosition = 1000
         else:
-            candleList.append(candle['k'])
-            changed = True
-    return candleList, changed
+            acc = self.account()
+            base_curr = symbol[:-4]
+            self.Position = acc[acc.index == base_curr,'free'][base_curr]
+            self.CashPosition = acc[acc.index == 'USDT','free']['USDT']
 
-def candleListToDF(candleList):
-    """
-    Convert list of candlesticks from WebSocket to DataFrame.
-    """
-    headers = ['Open time','Close time','Symbol','Interval','First trade ID','Last trade ID','Open price','Close price','High price','Low price','Base asset volume','Number of trades','Kline closed?','Quote asset volume','Taker buy base asset volume','Taker buy quote asset volume','Ignore']
-    candleDF = pd.DataFrame(candleList,index=[i for i in range(len(candleList))])
-    candleDF.set_axis(headers, axis=1, inplace=True)
-    candleDF['Open time'] = pd.to_datetime(candleDF['Open time'], unit='ms')
-    candleDF['Close time'] = pd.to_datetime(candleDF['Close time'], unit='ms')
-    candleDF['Close price'] = candleDF['Close price'].astype('float')
-    return candleDF[['Open time','Close time','Symbol','Interval','Open price','Close price','High price','Low price','Base asset volume','Number of trades','Kline closed?']]
+    def account(self):
+        acc_df = pd.DataFrame(self.Client.account_snapshot('SPOT')['snapshotVos'][0]['data']['balances'])
+        acc_df[['free','locked']] = acc_df[['free','locked']].astype(float)
+        acc_df.set_index('asset',inplace=True)
+        return acc_df
+    
+    def check_order(self,side,price,ammount):
+        if price*ammount <= 10: # Minimum order size
+            return False, 'Order to small'
+        if side == 'BUY': # Check available funds
+            return self.CashPosition > ammount*price, 'Not enough funds'
+        if side == 'SELL': # Check available crypto currency
+            return self.Position > ammount, 'Not enough {}'.format(self.symbol[:-4])
 
-def candleToDF(candledata,symbol,interval):
-    """
-    Convert candlesticks historic table to DataFrame.
-    """
-    headers = ['Open time','Open price','High price','Low price','Close price','Base asset volume','Close time','Quote asset volume','Number of trades','Taker buy base asset volume','Taker buy quote asset volume','Ignore']
-    candleDF = pd.DataFrame(candledata)
-    candleDF.set_axis(headers, axis=1, inplace=True)
-    candleDF['Open time'] = pd.to_datetime(candleDF['Open time'], unit='ms')
-    candleDF['Close time'] = pd.to_datetime(candleDF['Close time'], unit='ms')
-    candleDF['Symbol'] = symbol
-    candleDF['Interval'] = interval
-    candleDF['Kline closed?'] = True
-    return candleDF[['Open time','Close time','Symbol','Interval','Open price','Close price','High price','Low price','Base asset volume']]
+    def make_market_order(self,symbol,side,ammount):
+        params = {
+            "symbol": symbol,
+            "side": side,
+            "type": "MARKET",
+            "quantity": ammount,
+            }
+        order = self.Client.new_order(**params)
+        print(order)
 
-def candleToList(candledata,symbol,interval):
-    """
-    Convert candlesticks historic table to candlestick list of dictionaries.
-    """
-    candleList = []
-    for candle in candledata:
-        candleDict = {'k':{
-            "t": candle[0],  # Kline start time
-            "T": candle[6],  # Kline close time
-            "s": symbol,     # Symbol
-            "i": interval,   # Interval
-            "f": 0,          # First trade ID
-            "L": 0,          # Last trade ID
-            "o": candle[1],  # Open price
-            "c": candle[4],  # Close price
-            "h": candle[2],  # High price
-            "l": candle[3],  # Low price
-            "v": candle[5],  # Base asset volume
-            "n": candle[8],  # Number of trades
-            "x": True,       # Is this kline closed?
-            "q": candle[7],  # Quote asset volume
-            "V": candle[9],  # Taker buy base asset volume
-            "Q": candle[10], # Taker buy quote asset volume
-            "B": candle[11]  # Ignore
-            }}
-        candleList.append(candleDict['k'])
-    return candleList
+    def make_paper_order(self,symbol,side,price,ammount,time):
+        op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':time}
+        if not self.check_order(side,price,ammount)[0]:
+            print('Order could not be executed. {}'.format(self.check_order(symbol,side,price,ammount)[1]))
+        else:
+            self.Trades.append(op)
+            if side == 'BUY':
+                self.Position += ammount
+                self.CashPosition -= ammount*price*(1+self.commission)
+            if side == 'Sell':
+                self.Position -= ammount
+                self.CashPosition += ammount*price*(1-self.commission)
+            print('Order: {} {} {} for ${:.2f} (${:.2f} total) at {}'.format(side,ammount,symbol,price,price*ammount,time))
 
-# def WS_message_handler(msg):
-#     """
-#     Recieve WebSocket data, refresh candlestick DataFrame, evaluate trade strategy 
-#     and eventually execute trades.
-#     """
-#     global candleList, tradeList
-#     try:
-#         candleList, changed = refreshCandles(msg,candleList,maxLen=120)
-#         if changed:
-#             candleDF = WScandleToDF(candleList)
-#             MACD = macdStrategy(candleDF,filter=False)
-#             execStrat(MACD)
-#             # Write to log file
-#             with open(cd+'CandleSticks.txt','w') as f:
-#                 dfAsString = MACD.to_string(header=True, index=False)
-#                 f.write(dfAsString)
-#     except Exception as err:
-#         print(msg,err)
+    def connect_ws(self,handler,symbol,interval,duration):
+        self.WebsocketClient.start()
+        self.WebsocketClient.kline(
+            symbol=symbol,
+            interval=interval,
+            id=1,
+            callback=handler)
+        time.sleep(duration)
+        self.close_connection()
+
+    def close_connection(self):
+        print(pd.DataFrame(self.Trades))
+        print('Token position: {:.3f}'.format(self.Position))
+        print('Cash position: {:.2f}'.format(self.CashPosition))
+        price = float(self.Client.ticker_price(self.symbol)['price'])
+        print('Total: {:.2f}'.format(self.CashPosition+price*self.Position))
+        self.WebsocketClient.stop()
+
+    def init_candles(self,symbol,interval,lookback):
+        return self.candledata_to_list(self.Client.klines(symbol,interval,limit=lookback,endTime=int(time.time()*1000-60000)),symbol,interval)
+
+    def refresh_candles(self,candle,candlelist,maxLen=90000):
+        """
+        Recieve candlestick data and append to candlestick list
+        if it is new candlestick.
+        candle: Candlestick dictionary.
+        maxLen: Maximum length of list. As new candlesticks enter,
+        it removes old candlesticks.
+        """
+        changed = False
+
+        if candle['k']['x'] == True:
+            if candlelist:
+                if candle['k']['t'] != candlelist[-1]['t']:
+                    candlelist.append(candle['k'])
+                    changed = True
+                    if len(candlelist) > maxLen:
+                        candlelist.pop(0)
+            else:
+                candlelist.append(candle['k'])
+                changed = True
+        return candlelist, changed
+
+    def candlelist_to_df(self,candlelist):
+        """
+        Convert list of candlesticks from WebSocket to DataFrame.
+        """
+        headers = ['Open time','Close time','Symbol','Interval','First trade ID','Last trade ID','Open price','Close price','High price','Low price','Base asset volume','Number of trades','Kline closed?','Quote asset volume','Taker buy base asset volume','Taker buy quote asset volume','Ignore']
+        candledf = pd.DataFrame(candlelist,index=[i for i in range(len(candlelist))])
+        candledf.set_axis(headers, axis=1, inplace=True)
+        candledf['Open time'] = pd.to_datetime(candledf['Open time'], unit='ms')
+        candledf['Close time'] = pd.to_datetime(candledf['Close time'], unit='ms')
+        candledf[['Close price','Open price','High price','Low price','Base asset volume']] = candledf[['Close price','Open price','High price','Low price','Base asset volume']].astype('float')
+        return candledf[['Open time','Close time','Symbol','Interval','Open price','Close price','High price','Low price','Base asset volume','Number of trades','Kline closed?']]
+
+    def candledata_to_list(self,candledata,symbol,interval):
+        """
+        Convert candlesticks historic table to candlestick list of dictionaries.
+        """
+        candlelist = []
+        for candle in candledata:
+            candleDict = {'k':{
+                "t": candle[0],  # Kline start time
+                "T": candle[6],  # Kline close time
+                "s": symbol,     # Symbol
+                "i": interval,   # Interval
+                "f": 0,          # First trade ID
+                "L": 0,          # Last trade ID
+                "o": candle[1],  # Open price
+                "c": candle[4],  # Close price
+                "h": candle[2],  # High price
+                "l": candle[3],  # Low price
+                "v": candle[5],  # Base asset volume
+                "n": candle[8],  # Number of trades
+                "x": True,       # Is this kline closed?
+                "q": candle[7],  # Quote asset volume
+                "V": candle[9],  # Taker buy base asset volume
+                "Q": candle[10], # Taker buy quote asset volume
+                "B": candle[11]  # Ignore
+                }}
+            candlelist.append(candleDict['k'])
+        return candlelist
+
+    def candledata_to_df(self,candledata,symbol,interval):
+        """
+        Convert candlesticks historic table to DataFrame.
+        """
+        headers = ['Open time','Open price','High price','Low price','Close price','Base asset volume','Close time','Quote asset volume','Number of trades','Taker buy base asset volume','Taker buy quote asset volume','Ignore']
+        candledf = pd.DataFrame(candledata)
+        candledf.set_axis(headers, axis=1, inplace=True)
+        candledf['Open time'] = pd.to_datetime(candledf['Open time'], unit='ms')
+        candledf['Close time'] = pd.to_datetime(candledf['Close time'], unit='ms')
+        candledf[['Close price','Open price','High price','Low price','Base asset volume']] = candledf[['Close price','Open price','High price','Low price','Base asset volume']].astype('float')
+        candledf['Symbol'] = symbol
+        candledf['Interval'] = interval
+        candledf['Kline closed?'] = True
+        return candledf[['Open time','Close time','Symbol','Interval','Open price','Close price','High price','Low price','Base asset volume']]
+    
+    def live_chart(self,symbol,interval,refreshrate):
+        def animate(i):
+            data = self.candledata_to_df(self.Client.klines(symbol,interval,limit=120),symbol,interval)
+            plt.cla()
+            plt.plot(data['Close time'],data['Close price'])
+            plt.gcf().autofmt_xdate()
+            plt.xlabel('Time')
+            plt.ylabel('Price')
+            plt.title(symbol,y=1.05,fontsize=16)
+        ani = FuncAnimation(plt.gcf(),animate,refreshrate)
+        plt.show()
+
