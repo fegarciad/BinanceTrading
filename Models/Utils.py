@@ -3,7 +3,7 @@
 ########################
 
 import numpy as np
-import pandas as pd
+
 
 def sma(series,window=30):
     """
