@@ -17,7 +17,7 @@ from Models.TradingBot import TradingBot
 # Main function 
 def main(symbol,order_size,interval,duration,lookback,paper_trade):
     exchange = Exchange(API_KEY,API_SECRET)
-    print(exchange.account())
+    print(exchange.account_balance(),'\n')
 
     strategy = RandomStrategy()
     tradebot = TradingBot(exchange,strategy,symbol,order_size,interval,duration,lookback,paper_trade)

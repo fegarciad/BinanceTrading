@@ -30,13 +30,8 @@ class TradingBot():
 
     def exec_strategy(self,data):
         signal = self.strategy.signal(data)
-        price = data.tail(1).iloc[0]['Close price']
-        time = data.tail(1).iloc[0]['Close time']
-        
-        if signal == 'BUY':
-            self.exec_order(self.symbol,'BUY',price,self.order_size,time)
-        elif signal == 'SELL':
-            self.exec_order(self.symbol,'SELL',price,self.order_size,time)
+        if signal:
+            self.exec_order(self.symbol,signal,self.order_size)
         else:
             print('No order was placed.')
 
@@ -61,6 +56,7 @@ class TradingBot():
             raise
 
     def run(self):
+        print('Running {}, PaperTrade: {}\n'.format(str(self.strategy)[:-2],self.paper_trade))
         self.CandleList = self.exchange.init_candles(self.symbol,self.interval,self.lookback)
         print(self.exchange.candlelist_to_df(self.CandleList))
         self.exchange.connect_ws(self.ws_handler,self.symbol,self.interval,self.duration)

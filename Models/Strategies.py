@@ -72,7 +72,7 @@ class RandomStrategy(TradingStrategy):
     
     def signal(self,data):
         x = np.random.randint(100)
-        print(data,x)
+        print(data,'\n',x)
         if x < 25:
             return 'BUY'
         elif x > 75:

@@ -7,6 +7,7 @@ import time
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from binance.error import ClientError
 from binance.spot import Spot
 from binance.websocket.spot.websocket_client import SpotWebsocketClient
 from matplotlib.animation import FuncAnimation
@@ -14,7 +15,7 @@ from matplotlib.animation import FuncAnimation
 
 class Exchange():
 
-    def __init__(self,api,secret,url='',commission=0.001):
+    def __init__(self,api,secret,url='',commission=0.00075):
         self.url = url if url else 'wss://stream.binance.com:9443/ws'
         self.commission = commission
 
@@ -25,6 +26,7 @@ class Exchange():
         self.Trades = []
         self.Position = 0
         self.CashPosition = 0
+        self.Commissions = 0
 
     def init_portfolio(self,symbol,paper_trade):
         self.symbol = symbol
@@ -32,24 +34,26 @@ class Exchange():
             self.Position = 0.1
             self.CashPosition = 1000
         else:
-            acc = self.account()
+            acc = self.account_balance()
             base_curr = symbol[:-4]
             self.Position = acc[acc.index == base_curr,'free'][base_curr]
             self.CashPosition = acc[acc.index == 'USDT','free']['USDT']
 
-    def account(self):
-        acc_df = pd.DataFrame(self.Client.account_snapshot('SPOT')['snapshotVos'][0]['data']['balances'])
+    def account_balance(self):
+        acc_df = pd.DataFrame(self.Client.account()['balances'])
         acc_df[['free','locked']] = acc_df[['free','locked']].astype(float)
         acc_df.set_index('asset',inplace=True)
-        return acc_df
-    
-    def check_order(self,side,price,ammount):
-        if price*ammount <= 10: # Minimum order size
-            return False, 'Order to small'
-        if side == 'BUY': # Check available funds
-            return self.CashPosition > ammount*price, 'Not enough funds'
-        if side == 'SELL': # Check available crypto currency
-            return self.Position > ammount, 'Not enough {}'.format(self.symbol[:-4])
+        return acc_df.loc[(acc_df['free'] != 0.0)|(acc_df['free'] != 0.0)]
+
+    def refresh_positions(self,side,price,ammount):
+        if side == 'BUY':
+            self.Position += ammount
+            self.CashPosition -= ammount*price
+            self.Commissions += ammount*price*self.commission
+        if side == 'Sell':
+            self.Position -= ammount
+            self.CashPosition += ammount*price
+            self.Commissions += ammount*price*self.commission
 
     def make_market_order(self,symbol,side,ammount):
         params = {
@@ -58,22 +62,40 @@ class Exchange():
             "type": "MARKET",
             "quantity": ammount,
             }
-        order = self.Client.new_order(**params)
-        print(order)
+        try:
+            order = self.Client.new_order(**params)
+            t = time.strftime('%Y-%m-%d %H:%M', time.localtime(order['transactTime']/1000))
+            price = float(order['cummulativeQuoteQty'])/float(order['executedQty'])
+            op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
+            self.Trades.append(op)
+            self.refresh_positions(side,price,ammount)
+            print('Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}\n'.format(side,ammount,symbol,price,price*ammount,t))
+        except ClientError as err:
+            print(err.error_message)
+            print(err.status_code,err.error_code)
+        except Exception as err:
+            print(err)
+    
+    def check_paper_order(self,side,price,ammount):
+        if price*ammount <= 10: # Minimum order size
+            return False, 'Order to small.'
+        if side == 'BUY': # Check available funds
+            return self.CashPosition > ammount*price, 'Not enough funds.'
+        if side == 'SELL': # Check available crypto currency
+            return self.Position > ammount, 'Not enough funds.'
 
-    def make_paper_order(self,symbol,side,price,ammount,time):
-        op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':time}
-        if not self.check_order(side,price,ammount)[0]:
-            print('Order could not be executed. {}'.format(self.check_order(symbol,side,price,ammount)[1]))
+    def make_paper_order(self,symbol,side,ammount):
+        t = time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))
+        price = float(self.Client.ticker_price(symbol)['price'])
+        op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
+        check = self.check_paper_order(side,price,ammount)
+        
+        if not check[0]:
+            print('Order could not be executed. {}'.format(check[1]))
         else:
             self.Trades.append(op)
-            if side == 'BUY':
-                self.Position += ammount
-                self.CashPosition -= ammount*price*(1+self.commission)
-            if side == 'Sell':
-                self.Position -= ammount
-                self.CashPosition += ammount*price*(1-self.commission)
-            print('Order: {} {} {} for ${:.2f} (${:.2f} total) at {}'.format(side,ammount,symbol,price,price*ammount,time))
+            self.refresh_positions(side,price,ammount)
+            print('Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}\n'.format(side,ammount,symbol,price,price*ammount,t))
 
     def connect_ws(self,handler,symbol,interval,duration):
         self.WebsocketClient.start()
@@ -87,10 +109,11 @@ class Exchange():
 
     def close_connection(self):
         print(pd.DataFrame(self.Trades))
-        print('Token position: {:.3f}'.format(self.Position))
-        print('Cash position: {:.2f}'.format(self.CashPosition))
+        print('Token position: {:,.4f}'.format(self.Position))
+        print('Cash position: {:,.2f}'.format(self.CashPosition))
+        print('Commissions: {:,.4f}'.format(self.Commissions))
         price = float(self.Client.ticker_price(self.symbol)['price'])
-        print('Total: {:.2f}'.format(self.CashPosition+price*self.Position))
+        print('Total: {:.2f}'.format(self.CashPosition+price*self.Position-self.Commissions))
         self.WebsocketClient.stop()
 
     def init_candles(self,symbol,interval,lookback):
