@@ -63,5 +63,5 @@ class TradingBot():
         print('Running {}, PaperTrade: {}\n'.format(str(self.strategy),self.paper_trade))
         self.CandleList = self.exchange.init_candles(self.symbol,self.interval,self.lookback)
         self.exchange.value_positions()
-        self.exchange.log_to_file('Init\n'+self.exchange.candlelist_to_df(self.CandleList).to_string())
+        self.exchange.log_to_file('\nInit\n'+self.exchange.candlelist_to_df(self.CandleList).to_string())
         self.exchange.connect_ws(self.ws_handler,self.symbol,self.interval,self.duration)
