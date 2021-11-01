@@ -73,6 +73,60 @@ class MACDStrategy(TradingStrategy):
         print(buy_orders[-1], sell_orders[-1], order)
         return order
 
+@dataclass
+class TMAStrategy(TradingStrategy):
+    """Three Moving Average Strategy, if MA's cross buy or sell"""
+
+    period_long: int = 63
+    period_mid: int = 21
+    period_short: int = 5
+
+    def __str__(self) -> str:
+        return 'Three Moving Average Strategy (long={}, mid={}, short={})'.format(self.period_long,self.period_mid,self.period_short)
+
+    def signal(self, data: pd.DataFrame) -> str:
+        
+        buy_orders = []
+        sell_orders = []
+        shortFlag = False
+        longFlag = False
+
+        date_col = 'Close time'
+        price_col = 'Close price'
+
+        prices =  data[[date_col,price_col]].sort_values(by=date_col).reset_index(drop=True)
+        long_ma, mid_ma, short_ma = ema(prices[price_col],self.period_long), ema(prices[price_col],self.period_mid), ema(prices[price_col],self.period_short)
+        prices['Long'], prices['Middle'], prices['Short'] = long_ma, mid_ma, short_ma
+
+        for _, row in prices.iterrows():
+            if row['Middle'] < row['Long'] and row['Short'] < row['Middle'] and not longFlag and not shortFlag:
+                sell_orders.append('')
+                buy_orders.append('BUY')
+                shortFlag = True
+            elif row['Short'] > row['Middle'] and shortFlag:
+                sell_orders.append('SELL')
+                buy_orders.append('')
+                shortFlag = False
+            
+            elif row['Middle'] > row['Long'] and row['Short'] > row['Middle'] and not longFlag and not shortFlag:
+                sell_orders.append('')
+                buy_orders.append('BUY')
+                longFlag = True
+            elif row['Short'] < row['Middle'] and longFlag:
+                sell_orders.append('SELL')
+                buy_orders.append('')
+                longFlag = False
+
+            else:
+                buy_orders.append('')
+                sell_orders.append('')
+
+        if (buy_orders[-1] and sell_orders[-1]) or (not buy_orders[-1] and not sell_orders[-1]):
+            order = ''
+        else:
+            order = buy_orders[-1] if buy_orders[-1] else sell_orders[-1]
+        print(buy_orders[-1], sell_orders[-1], order)
+        return order
 
 @dataclass
 class RandomStrategy(TradingStrategy):
@@ -83,7 +137,7 @@ class RandomStrategy(TradingStrategy):
     
     def signal(self, data: pd.DataFrame) -> str:
         x = np.random.randint(100)
-        print(data,'\n',x)
+        print(x)
         if x < 25:
             return 'BUY'
         elif x > 75:
