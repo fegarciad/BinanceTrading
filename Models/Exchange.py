@@ -97,7 +97,7 @@ class Exchange():
             self.refresh_positions(side,price,ammount)
             print('Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}\n'.format(side,ammount,symbol,price,price*ammount,t))
 
-    def connect_ws(self, handler: callable[[str],Any], symbol: str, interval: str, duration: int) -> None:
+    def connect_ws(self, handler: callable, symbol: str, interval: str, duration: int) -> None:
         self.WebsocketClient.start()
         self.WebsocketClient.kline(
             symbol=symbol,
