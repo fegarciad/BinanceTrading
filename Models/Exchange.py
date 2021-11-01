@@ -2,8 +2,7 @@
 # Exchange Class #
 ##################
 
-import time
-from typing import Any
+import time, os
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -15,24 +14,33 @@ from matplotlib.animation import FuncAnimation
 
 class Exchange():
 
-    def __init__(self, api: str, secret: str, url: str = '', commission: float = 0.00075):
+    def __init__(self, api: str, secret: str, url: str = '', commission: float = 0.00075, paper_portfolio: tuple[float,float] = (0.1,1000), logging: bool = True):
         self.url = url if url else 'wss://stream.binance.com:9443/ws'
         self.commission = commission
 
         self.Client = Spot(key=api, secret=secret)
         self.WebsocketClient = SpotWebsocketClient(stream_url=self.url)
+        
+        self.log_file = os.path.join(os.getcwd(),'log_file.txt')
+        self.logging = logging
 
         self.symbol = ''
         self.Trades = []
         self.Position = 0
         self.CashPosition = 0
         self.Commissions = 0
+        self.PaperPortfolio = paper_portfolio
+
+    def log_to_file(self,msg: str) -> None:
+        if self.logging:
+            with open(self.log_file,'a+') as f:
+                f.write(msg)
 
     def init_portfolio(self, symbol: str, paper_trade: bool) -> None:
         self.symbol = symbol
         if paper_trade:
-            self.Position = 0.1
-            self.CashPosition = 1000
+            self.Position = self.PaperPortfolio[0]
+            self.CashPosition = self.PaperPortfolio[1]
         else:
             acc = self.account_balance()
             base_curr = symbol[:-4]
@@ -55,6 +63,12 @@ class Exchange():
             self.CashPosition += ammount*price
             self.Commissions += ammount*price*self.commission
 
+    def value_positions(self) -> None:
+        price = float(self.Client.ticker_price(self.symbol)['price'])
+        msg = '\n{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.4f}\nTotal: {:.2f}'.format(self.symbol,self.Position,self.CashPosition,self.Commissions,self.CashPosition+price*self.Position-self.Commissions)
+        print(msg)
+        self.log_to_file(msg)
+
     def market_order(self, symbol: str, side: str, ammount: float) -> None:
         params = {
             "symbol": symbol,
@@ -69,7 +83,9 @@ class Exchange():
             op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
             self.Trades.append(op)
             self.refresh_positions(side,price,ammount)
-            print('Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}\n'.format(side,ammount,symbol,price,price*ammount,t))
+            msg = 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}\n'.format(side,ammount,symbol,price,price*ammount,t)
+            print(msg)
+            self.log_to_file(msg)
         except ClientError as err:
             print(err.error_message)
             print(err.status_code,err.error_code)
@@ -91,11 +107,15 @@ class Exchange():
         check = self.check_paper_order(side,price,ammount)
         
         if not check[0]:
-            print('Order could not be executed. {}'.format(check[1]))
+            msg = 'Order could not be executed. {}'.format(check[1])
+            print(msg)
+            self.log_to_file(msg)
         else:
             self.Trades.append(op)
             self.refresh_positions(side,price,ammount)
-            print('Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}\n'.format(side,ammount,symbol,price,price*ammount,t))
+            msg = 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}\n'.format(side,ammount,symbol,price,price*ammount,t)
+            print(msg)
+            self.log_to_file(msg)
 
     def connect_ws(self, handler: callable, symbol: str, interval: str, duration: int) -> None:
         self.WebsocketClient.start()
@@ -109,12 +129,8 @@ class Exchange():
 
     def close_connection(self) -> None:
         print(pd.DataFrame(self.Trades))
-        # Value_positions()
-        print('Token position: {:,.4f}'.format(self.Position))
-        print('Cash position: {:,.2f}'.format(self.CashPosition))
-        print('Commissions: {:,.4f}'.format(self.Commissions))
-        price = float(self.Client.ticker_price(self.symbol)['price'])
-        print('Total: {:.2f}'.format(self.CashPosition+price*self.Position-self.Commissions))
+        self.log_to_file(pd.DataFrame(self.Trades).to_string())
+        self.value_positions()
         self.WebsocketClient.stop()
 
     def init_candles(self, symbol: str, interval: str, lookback: int) -> list[dict]:

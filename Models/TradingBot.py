@@ -35,13 +35,16 @@ class TradingBot():
         if signal:
             self.exec_order(self.symbol,signal,self.order_size)
         else:
-            print('No order was placed.')
+            msg = 'No order was placed.'
+            print(msg)
+            self.exchange.log_to_file(msg)
 
     def ws_handler(self, msg: str) -> None:
         try:
             self.CandleList, changed = self.exchange.refresh_candles(msg,self.CandleList)
             if changed:
                 self.CandleDF = self.exchange.candlelist_to_df(self.CandleList)
+                self.exchange.log_to_file('\n'+self.CandleDF.to_string())
                 self.exec_strategy(self.CandleDF)
 
         except KeyError:
@@ -59,6 +62,6 @@ class TradingBot():
     def run(self) -> None:
         print('Running {}, PaperTrade: {}\n'.format(str(self.strategy),self.paper_trade))
         self.CandleList = self.exchange.init_candles(self.symbol,self.interval,self.lookback)
-        # value_positions()
-        print(self.exchange.candlelist_to_df(self.CandleList))
+        self.exchange.value_positions()
+        self.exchange.log_to_file('Init\n'+self.exchange.candlelist_to_df(self.CandleList).to_string())
         self.exchange.connect_ws(self.ws_handler,self.symbol,self.interval,self.duration)
