@@ -23,6 +23,7 @@ class Exchange():
         
         self.log_file = os.path.join(os.getcwd(),'log_file.txt')
         self.logging = logging
+        self.log_to_file(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time())),init=True)
 
         self.symbol = ''
         self.Trades = []
@@ -31,10 +32,14 @@ class Exchange():
         self.Commissions = 0
         self.PaperPortfolio = paper_portfolio
 
-    def log_to_file(self, msg: str) -> None:
+    def log_to_file(self, msg: str, init: bool = False) -> None:
         if self.logging:
-            with open(self.log_file,'a+') as f:
-                f.write('\n'+msg)
+            if init:
+                with open(self.log_file,'w') as f:
+                    f.write(msg)
+            else:
+                with open(self.log_file,'a+') as f:
+                    f.write('\n'+msg)
 
     def init_portfolio(self, curr_pair: tuple[str,str], paper_trade: bool) -> None:
         self.symbol = curr_pair[0]+curr_pair[1]
