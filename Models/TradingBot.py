@@ -10,7 +10,7 @@ from Models.Strategies import TradingStrategy
 
 class TradingBot():
 
-    def __init__(self, exchange: Exchange, strategy: TradingStrategy, curr_pair: tuple[str,str], order_size: float, interval: str, duration: int, lookback: int, paper_trade: bool = False):
+    def __init__(self, exchange: Exchange, strategy: TradingStrategy, curr_pair: tuple[str,str], order_size: float, interval: str, duration: int, lookback: int, paper_trade: bool = False) -> None:
         self.exchange = exchange
         self.strategy = strategy
         self.symbol = curr_pair[0]+curr_pair[1]

@@ -14,7 +14,7 @@ from matplotlib.animation import FuncAnimation
 
 class Exchange():
 
-    def __init__(self, api: str, secret: str, url: str = '', commission: float = 0.00075, paper_portfolio: tuple[float,float] = (0.1,1000), logging: bool = True):
+    def __init__(self, api: str, secret: str, url: str = '', commission: float = 0.00075, paper_portfolio: tuple[float,float] = (0.1,1000), logging: bool = True) -> None:
         self.url = url if url else 'wss://stream.binance.com:9443/ws'
         self.commission = commission
 
