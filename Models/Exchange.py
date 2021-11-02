@@ -31,21 +31,21 @@ class Exchange():
         self.Commissions = 0
         self.PaperPortfolio = paper_portfolio
 
-    def log_to_file(self,msg: str) -> None:
+    def log_to_file(self, msg: str) -> None:
         if self.logging:
             with open(self.log_file,'a+') as f:
-                f.write(msg)
+                f.write('\n'+msg)
 
-    def init_portfolio(self, symbol: str, paper_trade: bool) -> None:
-        self.symbol = symbol
+    def init_portfolio(self, curr_pair: tuple[str,str], paper_trade: bool) -> None:
+        self.symbol = curr_pair[0]+curr_pair[1]
         if paper_trade:
             self.Position = self.PaperPortfolio[0]
             self.CashPosition = self.PaperPortfolio[1]
         else:
             acc = self.account_balance()
-            base_curr = symbol[:-4]
+            base_curr, quote_curr = curr_pair
             self.Position = acc[acc.index == base_curr,'free'][base_curr]
-            self.CashPosition = acc[acc.index == 'USDT','free']['USDT']
+            self.CashPosition = acc[acc.index == quote_curr,'free'][quote_curr]
 
     def account_balance(self) -> pd.DataFrame:
         acc_df = pd.DataFrame(self.Client.account()['balances'])
@@ -65,32 +65,26 @@ class Exchange():
 
     def value_positions(self) -> None:
         price = float(self.Client.ticker_price(self.symbol)['price'])
-        msg = '\n{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.4f}\nTotal: {:.2f}'.format(self.symbol,self.Position,self.CashPosition,self.Commissions,self.CashPosition+price*self.Position-self.Commissions)
+        msg = '{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.4f}\nTotal: {:.2f}'.format(self.symbol,self.Position,self.CashPosition,self.Commissions,self.CashPosition+price*self.Position-self.Commissions)
         print(msg)
         self.log_to_file(msg)
 
     def market_order(self, symbol: str, side: str, ammount: float) -> None:
-        params = {
-            "symbol": symbol,
-            "side": side,
-            "type": "MARKET",
-            "quantity": ammount,
-            }
+        params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": ammount}
         try:
             order = self.Client.new_order(**params)
-            t = time.strftime('%Y-%m-%d %H:%M', time.localtime(order['transactTime']/1000))
-            price = float(order['cummulativeQuoteQty'])/float(order['executedQty'])
-            op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
-            self.Trades.append(op)
-            self.refresh_positions(side,price,ammount)
-            msg = 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}\n'.format(side,ammount,symbol,price,price*ammount,t)
-            print(msg)
-            self.log_to_file(msg)
         except ClientError as err:
-            print(err.error_message)
-            print(err.status_code,err.error_code)
+            print(err.error_message,err.status_code,err.error_code)
         except Exception as err:
             print(err)
+        t = time.strftime('%Y-%m-%d %H:%M', time.localtime(order['transactTime']/1000))
+        price = float(order['cummulativeQuoteQty'])/float(order['executedQty'])
+        op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
+        self.Trades.append(op)
+        self.refresh_positions(side,price,ammount)
+        msg = 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}'.format(side,ammount,symbol,price,price*ammount,t)
+        print(msg)
+        self.log_to_file(msg)
     
     def check_paper_order(self, side: str, price: float, ammount: float) -> tuple[bool,str]:
         if price*ammount <= 10: # Minimum order size
@@ -113,7 +107,7 @@ class Exchange():
         else:
             self.Trades.append(op)
             self.refresh_positions(side,price,ammount)
-            msg = 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}\n'.format(side,ammount,symbol,price,price*ammount,t)
+            msg = 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}'.format(side,ammount,symbol,price,price*ammount,t)
             print(msg)
             self.log_to_file(msg)
 
@@ -128,7 +122,7 @@ class Exchange():
         self.close_connection()
 
     def close_connection(self) -> None:
-        print(pd.DataFrame(self.Trades))
+        print(pd.DataFrame(self.Trades).to_string())
         self.log_to_file(pd.DataFrame(self.Trades).to_string())
         self.value_positions()
         self.WebsocketClient.stop()

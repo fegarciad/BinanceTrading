@@ -10,10 +10,10 @@ from Models.Strategies import TradingStrategy
 
 class TradingBot():
 
-    def __init__(self, exchange: Exchange, strategy: TradingStrategy, symbol: str, order_size: float, interval: str, duration: int, lookback: int, paper_trade: bool = False):
+    def __init__(self, exchange: Exchange, strategy: TradingStrategy, curr_pair: tuple[str,str], order_size: float, interval: str, duration: int, lookback: int, paper_trade: bool = False):
         self.exchange = exchange
         self.strategy = strategy
-        self.symbol = symbol
+        self.symbol = curr_pair[0]+curr_pair[1]
         self.order_size = order_size
         self.interval = interval
         self.duration = duration
@@ -22,7 +22,7 @@ class TradingBot():
 
         self.exec_order = self.exchange.paper_market_order if self.paper_trade else self.exchange.market_order
 
-        exchange.init_portfolio(symbol,paper_trade)
+        self.exchange.init_portfolio(curr_pair,paper_trade)
 
         self.CandleList = []
         self.CandleDF = None
@@ -44,7 +44,7 @@ class TradingBot():
             self.CandleList, changed = self.exchange.refresh_candles(msg,self.CandleList)
             if changed:
                 self.CandleDF = self.exchange.candlelist_to_df(self.CandleList)
-                self.exchange.log_to_file('\n'+self.CandleDF.to_string())
+                self.exchange.log_to_file(self.CandleDF.to_string())
                 self.exec_strategy(self.CandleDF)
 
         except KeyError:
@@ -63,5 +63,5 @@ class TradingBot():
         print('Running {}, PaperTrade: {}\n'.format(str(self.strategy),self.paper_trade))
         self.CandleList = self.exchange.init_candles(self.symbol,self.interval,self.lookback)
         self.exchange.value_positions()
-        self.exchange.log_to_file('\nInit\n'+self.exchange.candlelist_to_df(self.CandleList).to_string())
+        self.exchange.log_to_file('Init\n'+self.exchange.candlelist_to_df(self.CandleList).to_string())
         self.exchange.connect_ws(self.ws_handler,self.symbol,self.interval,self.duration)
