@@ -26,5 +26,5 @@ def main(symbol,order_size,interval,duration,lookback,paper_trade):
 
 
 if __name__ == '__main__':
-    main('BTCUSDT',0.0005,'1m',duration=int(10*60),lookback=5,paper_trade=True)
+    main(('BTC','USDT'),0.0005,'1m',duration=int(2*60),lookback=5,paper_trade=True)
 
