@@ -34,6 +34,7 @@ class Exchange():
         self.PaperPortfolio = paper_portfolio
 
     def log_to_file(self, msg: str, init: bool = False) -> None:
+        """Log messages to log file for later inspection."""
         if self.logging:
             if init:
                 with open(self.log_file,'w') as f:
@@ -43,6 +44,7 @@ class Exchange():
                     f.write('\n'+msg)
 
     def init_portfolio(self, coin: str, paper_trade: bool) -> None:
+        """Initialize local portfolio to track orders and current positions."""
         self.symbol = coin[0]+'USDT'
         if paper_trade:
             self.Position = self.PaperPortfolio[0]
@@ -53,6 +55,7 @@ class Exchange():
             self.CashPosition = float(acc.loc[acc['Asset'] == 'USDT','Free'])
 
     def account_balance(self) -> pd.DataFrame:
+        """Get current account balances from binance."""
         acc_df = pd.DataFrame(self.Client.account()['balances'])
         acc_df[['free','locked']] = acc_df[['free','locked']].astype(float)
         acc_df.columns = ['Asset','Free','Locked']
@@ -60,6 +63,7 @@ class Exchange():
         return acc_df[['Asset','Free','Locked']]
 
     def refresh_positions(self, side: str, price: float, ammount: float) -> None:
+        """Given an order, modify positions accordingly."""
         if side == 'BUY':
             self.Position += ammount
             self.CashPosition -= ammount*price
@@ -70,12 +74,14 @@ class Exchange():
             self.Commissions += ammount*price*self.commission
 
     def value_positions(self) -> None:
+        """Value current positions."""
         price = float(self.Client.ticker_price(self.symbol)['price'])
         msg = '{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.4f}\nTotal: {:.2f}'.format(self.symbol,self.Position,self.CashPosition,self.Commissions,self.CashPosition+price*self.Position-self.Commissions)
         print(msg)
         self.log_to_file(msg)
 
     def market_order(self, symbol: str, side: str, ammount: float) -> None:
+        """Send market execution order to binance to get filled."""
         params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": ammount}
         try:
             order = self.Client.new_order(**params)
@@ -93,6 +99,7 @@ class Exchange():
         self.log_to_file(msg)
     
     def check_paper_order(self, side: str, price: float, ammount: float) -> tuple[bool,str]:
+        """Check if a paper order can be executed based on current cash and coin positions."""
         if price*ammount <= 10: # Minimum order size
             return False, 'Order to small.'
         if side == 'BUY': # Check available funds
@@ -101,6 +108,7 @@ class Exchange():
             return self.Position > ammount, 'Not enough funds.'
 
     def paper_market_order(self, symbol: str, side: str, ammount: float) -> None:
+        """Execute paper order that is stored and handled localy."""
         t = time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))
         price = float(self.Client.ticker_price(symbol)['price'])
         op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
@@ -118,6 +126,7 @@ class Exchange():
             self.log_to_file(msg)
 
     def connect_ws(self, handler: callable, symbol: str, interval: str, duration: int) -> None:
+        """Connect to WebSocket."""
         self.WebsocketClient.start()
         self.WebsocketClient.kline(
             symbol=symbol,
@@ -128,6 +137,7 @@ class Exchange():
         self.close_connection()
 
     def close_connection(self) -> None:
+        """Close connection to WebSocket, print current positions and deals made this session."""
         print('Closing connection.')
         print(pd.DataFrame(self.Trades).to_string())
         self.log_to_file(pd.DataFrame(self.Trades).to_string())
@@ -136,17 +146,12 @@ class Exchange():
         self.WebsocketClient.stop()
 
     def init_candles(self, symbol: str, interval: str, lookback: int) -> list[dict]:
+        """Get historic data for strategies that need to look back to function."""
         kline_data = self.Client.klines(symbol,interval,limit=lookback,endTime=int(time.time()*1000-60000))
         return self.candledata_to_list(kline_data,symbol,interval)
 
     def refresh_candles(self, candle: dict, candlelist: list[dict] , maxLen: int = 90000) -> tuple[list[dict],bool]:
-        """
-        Recieve candlestick data and append to candlestick list
-        if it is new candlestick.
-        candle: Candlestick dictionary.
-        maxLen: Maximum length of list. As new candlesticks enter,
-        it removes old candlesticks.
-        """
+        """Recieve candlestick data and append to candlestick list if it is new candlestick."""
         changed = False
 
         if candle['k']['x'] == True:
@@ -162,9 +167,7 @@ class Exchange():
         return candlelist, changed
 
     def candlelist_to_df(self, candlelist: list[dict]) -> pd.DataFrame:
-        """
-        Convert list of candlesticks from WebSocket to DataFrame.
-        """
+        """Convert list of candlesticks from WebSocket to DataFrame."""
         headers = ['Open time','Close time','Symbol','Interval','First trade ID','Last trade ID','Open price','Close price','High price','Low price','Base asset volume','Number of trades','Kline closed?','Quote asset volume','Taker buy base asset volume','Taker buy quote asset volume','Ignore']
         candledf = pd.DataFrame(candlelist,index=[i for i in range(len(candlelist))])
         candledf.set_axis(headers, axis=1, inplace=True)
@@ -174,9 +177,7 @@ class Exchange():
         return candledf[['Open time','Close time','Symbol','Interval','Open price','Close price','High price','Low price','Base asset volume','Number of trades','Kline closed?']]
 
     def candledata_to_list(self, candledata: list[list], symbol: str, interval: str) -> list[dict]:
-        """
-        Convert candlesticks historic table to candlestick list of dictionaries.
-        """
+        """Convert candlesticks historic table to candlestick list of dictionaries."""
         candlelist = []
         for candle in candledata:
             candleDict = {'k':{
@@ -202,9 +203,7 @@ class Exchange():
         return candlelist
 
     def candledata_to_df(self, candledata: list[list], symbol: str, interval: str) -> pd.DataFrame:
-        """
-        Convert candlesticks historic table to DataFrame.
-        """
+        """Convert candlesticks historic table to DataFrame."""
         headers = ['Open time','Open price','High price','Low price','Close price','Base asset volume','Close time','Quote asset volume','Number of trades','Taker buy base asset volume','Taker buy quote asset volume','Ignore']
         candledf = pd.DataFrame(candledata)
         candledf.set_axis(headers, axis=1, inplace=True)
@@ -217,6 +216,7 @@ class Exchange():
         return candledf[['Open time','Close time','Symbol','Interval','Open price','Close price','High price','Low price','Base asset volume']]
     
     def live_chart(self, symbol: str, interval: str, refreshrate: int = 2000) -> None:
+        """Plot live chart of selected coin."""
         def animate(i):
             data = self.candledata_to_df(self.Client.klines(symbol,interval,limit=120),symbol,interval)
             plt.cla()
@@ -227,4 +227,3 @@ class Exchange():
             plt.title(symbol,y=1.05,fontsize=16)
         ani = FuncAnimation(plt.gcf(),animate,refreshrate)
         plt.show()
-
