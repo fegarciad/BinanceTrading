@@ -15,7 +15,7 @@ from matplotlib.animation import FuncAnimation
 
 class Exchange():
 
-    def __init__(self, api: str, secret: str, commission: float = 0.00075, paper_portfolio: tuple[float,float] = (0.1,1000), logging: bool = True) -> None:
+    def __init__(self, api: str, secret: str, paper_portfolio: list[float,float] = [0.1,1000], commission: float = 0.00075, logging: bool = True) -> None:
         self.apiurl = 'https://api.binance.com'
         self.wsurl = 'wss://stream.binance.com:9443/ws'
         self.commission = commission
@@ -46,14 +46,18 @@ class Exchange():
 
     def init_portfolio(self, coin: str, paper_trade: bool) -> None:
         """Initialize local portfolio to track orders and current positions."""
-        self.symbol = coin[0]+'USDT'
+        self.symbol = coin+'USDT'
         if paper_trade:
             self.Position = self.PaperPortfolio[0]
             self.CashPosition = self.PaperPortfolio[1]
         else:
-            acc = self.account_balance()
-            self.Position = float(acc.loc[acc['Asset'] == coin,'Free'])
-            self.CashPosition = float(acc.loc[acc['Asset'] == 'USDT','Free'])
+            self.Position = self.get_coin_balance(coin)
+            self.CashPosition = self.get_coin_balance('USDT')
+
+    def set_paper_portfolio(self, coin: float, cash: float) -> None:
+        """Set paper portfolio values after initializing exchange class."""
+        self.PaperPortfolio[0] = coin
+        self.PaperPortfolio[1] = cash
 
     def account_balance(self) -> pd.DataFrame:
         """Get current account balances from binance."""
@@ -62,6 +66,11 @@ class Exchange():
         acc_df.columns = ['Asset','Free','Locked']
         acc_df = acc_df.loc[(acc_df['Free'] != 0.0)|(acc_df['Locked'] != 0.0)].reset_index()
         return acc_df[['Asset','Free','Locked']]
+
+    def get_coin_balance(self,coin: str) -> float:
+        """Get balance of specific coin."""
+        acc_df = self.account_balance()
+        return float(acc_df.loc[acc_df['Asset'] == coin,'Free'])
 
     def refresh_positions(self, side: str, price: float, ammount: float) -> None:
         """Given an order, modify positions accordingly."""
@@ -77,7 +86,7 @@ class Exchange():
     def value_positions(self) -> None:
         """Value current positions."""
         price = float(self.Client.ticker_price(self.symbol)['price'])
-        msg = '{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.4f}\nTotal: {:.2f}'.format(self.symbol,self.Position,self.CashPosition,self.Commissions,self.CashPosition+price*self.Position-self.Commissions)
+        msg = '{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.4f}\nTotal: {:.2f}\n'.format(self.symbol,self.Position,self.CashPosition,self.Commissions,self.CashPosition+price*self.Position-self.Commissions)
         print(msg)
         self.log_to_file(msg)
 
@@ -114,7 +123,6 @@ class Exchange():
         price = float(self.Client.ticker_price(symbol)['price'])
         op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
         check = self.check_paper_order(side,price,ammount)
-        
         if not check[0]:
             msg = 'Order could not be executed. {}'.format(check[1])
             print(msg)
@@ -154,7 +162,6 @@ class Exchange():
     def refresh_candles(self, candle: dict, candlelist: list[dict] , maxLen: int = 90000) -> tuple[list[dict],bool]:
         """Recieve candlestick data and append to candlestick list if it is new candlestick."""
         changed = False
-
         if candle['k']['x'] == True:
             if candlelist:
                 if candle['k']['t'] != candlelist[-1]['t']:
