@@ -33,6 +33,10 @@ class CommandLine():
             sys.exit()
         else:
             self.paper_trade = self.paper_trade == 'True'
+        
+    def check_backtest_params(self) -> None:
+        """Check format of given parameters for backtesting."""
+        pass
 
     def read_args(self) -> dict:
         """Read parameters given in command line."""
@@ -97,4 +101,8 @@ class CommandLine():
             'paper_trade': self.paper_trade,
         }
         return params
+
+    def read_backtest_args(self) -> dict:
+        """Read parameters given in command line for backtesting."""
+        pass
         
