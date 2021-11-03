@@ -7,29 +7,15 @@ import pandas as pd
 
 
 def sma(series: pd.DataFrame, window: int = 30) -> pd.DataFrame:
-    """
-    Return the simple moving average for given series.
-    series: pandas price series.
-    window: rolling average window.
-    """
+    """Return the simple moving average for given series."""
     return series.rolling(window).mean()
 
 def ema(series: pd.DataFrame, window: int = 30) -> pd.DataFrame:
-    """
-    Return the exponencial moving average for given series.
-    series: pandas price series.
-    window: rolling average window.
-    """
+    """Return the exponencial moving average for given series."""
     return series.ewm(span=window,adjust=False).mean()
 
 def macd(series: pd.DataFrame, period_long: int = 26, period_short: int = 12, period_signal: int = 9)-> tuple[pd.DataFrame,pd.DataFrame]:
-    """
-    Return tuple of pandas series with the moving average convergence/divergence and signal line.
-    series: pandas price series.
-    period_long: long rolling average window.
-    period_short: short rolling average window.
-    period_signal: rolling average window for signal line.
-    """
+    """Return tuple of pandas series with the moving average convergence/divergence and signal line."""
     long_ema = ema(series,window=period_long)
     short_ema = ema(series,window=period_short)
 
@@ -39,11 +25,7 @@ def macd(series: pd.DataFrame, period_long: int = 26, period_short: int = 12, pe
     return macd, signal
 
 def rsi(series: pd.DataFrame, window: int = 14) -> pd.DataFrame:
-    """
-    Return Relative Strength Index for a pandas series.
-    series: pandas price series
-    window: rolling average window
-    """
+    """Return Relative Strength Index for a pandas series."""
     delta = series.diff(1)
     delta = delta.dropna()
     

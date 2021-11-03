@@ -2,7 +2,8 @@
 # Interpret Command Line Arguments #
 ####################################
 
-import re, sys
+import re
+import sys
 
 
 class CommandLine():
@@ -11,6 +12,7 @@ class CommandLine():
         self.args = args
 
     def check_params(self) -> None:
+        """Check format of given parameters."""
         intervals = ['1m','3m','5m','15m','30m','1h','2h','4h','6h','8h','12h','1d','3d','1w','1M']
         if self.interval not in intervals:
             print('\nInterval has to be one of {}.'.format(intervals))
@@ -33,6 +35,7 @@ class CommandLine():
             self.paper_trade = self.paper_trade == 'True'
 
     def read_args(self) -> dict:
+        """Read parameters given in command line."""
         print("Setting params ...")
         # Coin
         try:

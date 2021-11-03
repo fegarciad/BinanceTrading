@@ -28,9 +28,11 @@ class TradingBot():
         self.CandleDF = None
 
     def print_data(self) -> None:
+        """Print live candlestick data to screen."""
         self.exchange.connect_ws(lambda x: print(x),self.symbol,self.interval,self.duration)
 
     def exec_strategy(self, data: pd.DataFrame) -> None:
+        """Check if there is buy/sell signal and execute it."""
         signal = self.strategy.signal(data)
         if signal:
             self.exec_order(self.symbol,signal,self.order_size)
@@ -40,6 +42,7 @@ class TradingBot():
             self.exchange.log_to_file(msg)
 
     def ws_handler(self, msg: str) -> None:
+        """Function to handle incoming WebSocket candle data and pass it to the strategy."""
         try:
             self.CandleList, changed = self.exchange.refresh_candles(msg,self.CandleList)
             if changed:
@@ -60,6 +63,7 @@ class TradingBot():
             raise
 
     def run(self) -> None:
+        """Initialize portfolio, connecto to WebSocket and run strategy."""
         print('Running {}, PaperTrade: {}\n'.format(str(self.strategy),self.paper_trade))
         self.CandleList = self.exchange.init_candles(self.symbol,self.interval,self.lookback)
         self.exchange.value_positions()
