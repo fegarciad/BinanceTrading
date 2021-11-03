@@ -14,12 +14,13 @@ from matplotlib.animation import FuncAnimation
 
 class Exchange():
 
-    def __init__(self, api: str, secret: str, url: str = '', commission: float = 0.00075, paper_portfolio: tuple[float,float] = (0.1,1000), logging: bool = True) -> None:
-        self.url = url if url else 'wss://stream.binance.com:9443/ws'
+    def __init__(self, api: str, secret: str, commission: float = 0.00075, paper_portfolio: tuple[float,float] = (0.1,1000), logging: bool = True) -> None:
+        self.apiurl = 'https://api.binance.com'
+        self.wsurl = 'wss://stream.binance.com:9443/ws'
         self.commission = commission
 
-        self.Client = Spot(key=api, secret=secret)
-        self.WebsocketClient = SpotWebsocketClient(stream_url=self.url)
+        self.Client = Spot(key=api, secret=secret, base_url=self.apiurl)
+        self.WebsocketClient = SpotWebsocketClient(stream_url=self.wsurl)
         
         self.log_file = os.path.join(os.getcwd(),'log_file.txt')
         self.logging = logging
@@ -41,22 +42,22 @@ class Exchange():
                 with open(self.log_file,'a+') as f:
                     f.write('\n'+msg)
 
-    def init_portfolio(self, curr_pair: tuple[str,str], paper_trade: bool) -> None:
-        self.symbol = curr_pair[0]+curr_pair[1]
+    def init_portfolio(self, coin: str, paper_trade: bool) -> None:
+        self.symbol = coin[0]+'USDT'
         if paper_trade:
             self.Position = self.PaperPortfolio[0]
             self.CashPosition = self.PaperPortfolio[1]
         else:
             acc = self.account_balance()
-            base_curr, quote_curr = curr_pair
-            self.Position = acc[acc.index == base_curr,'free'][base_curr]
-            self.CashPosition = acc[acc.index == quote_curr,'free'][quote_curr]
+            self.Position = float(acc.loc[acc['Asset'] == coin,'Free'])
+            self.CashPosition = float(acc.loc[acc['Asset'] == 'USDT','Free'])
 
     def account_balance(self) -> pd.DataFrame:
         acc_df = pd.DataFrame(self.Client.account()['balances'])
         acc_df[['free','locked']] = acc_df[['free','locked']].astype(float)
-        acc_df.set_index('asset',inplace=True)
-        return acc_df.loc[(acc_df['free'] != 0.0)|(acc_df['free'] != 0.0)]
+        acc_df.columns = ['Asset','Free','Locked']
+        acc_df = acc_df.loc[(acc_df['Free'] != 0.0)|(acc_df['Locked'] != 0.0)].reset_index()
+        return acc_df[['Asset','Free','Locked']]
 
     def refresh_positions(self, side: str, price: float, ammount: float) -> None:
         if side == 'BUY':
@@ -127,9 +128,11 @@ class Exchange():
         self.close_connection()
 
     def close_connection(self) -> None:
+        print('Closing connection.')
         print(pd.DataFrame(self.Trades).to_string())
         self.log_to_file(pd.DataFrame(self.Trades).to_string())
         self.value_positions()
+        self.log_to_file(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time())))
         self.WebsocketClient.stop()
 
     def init_candles(self, symbol: str, interval: str, lookback: int) -> list[dict]:
