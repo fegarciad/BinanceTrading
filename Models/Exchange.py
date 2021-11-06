@@ -97,8 +97,6 @@ class Exchange():
             order = self.Client.new_order(**params)
         except ClientError as err:
             print(err.error_message,err.status_code,err.error_code)
-        except Exception as err:
-            print(err)
         t = time.strftime('%Y-%m-%d %H:%M', time.localtime(order['transactTime']/1000))
         price = float(order['cummulativeQuoteQty'])/float(order['executedQty'])
         op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
@@ -142,8 +140,12 @@ class Exchange():
             interval=interval,
             id=1,
             callback=handler)
-        time.sleep(duration)
-        self.close_connection()
+        try:
+            time.sleep(duration)
+        except KeyboardInterrupt:
+            raise
+        finally:
+            self.close_connection()
 
     def close_connection(self) -> None:
         """Close connection to WebSocket, print current positions and deals made this session."""

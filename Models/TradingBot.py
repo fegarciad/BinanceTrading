@@ -49,7 +49,6 @@ class TradingBot():
                 self.CandleDF = self.exchange.candlelist_to_df(self.CandleList)
                 self.exchange.log_to_file(self.CandleDF.to_string())
                 self.exec_strategy(self.CandleDF)
-
         except KeyError:
             if msg == {'result': None, 'id': 1}:
                 pass
@@ -57,10 +56,6 @@ class TradingBot():
                 print(msg)
                 self.exchange.close_connection()
                 raise
-        except Exception as err:
-            print(err)
-            self.exchange.close_connection()
-            raise
 
     def run(self) -> None:
         """Initialize portfolio, connecto to WebSocket and run strategy."""
