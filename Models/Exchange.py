@@ -99,16 +99,18 @@ class Exchange():
         params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": ammount}
         try:
             order = self.Client.new_order(**params)
+            t = time.strftime('%Y-%m-%d %H:%M', time.localtime(order['transactTime']/1000))
+            price = float(order['cummulativeQuoteQty'])/float(order['executedQty'])
+            op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
+            self.Trades.append(op)
+            self.refresh_positions(side,price,ammount)
+            msg = 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}'.format(side,ammount,symbol,price,price*ammount,t)
+            print(msg)
+            self.log_to_file(msg)
         except ClientError as err:
-            print(err.error_message,err.status_code,err.error_code)
-        t = time.strftime('%Y-%m-%d %H:%M', time.localtime(order['transactTime']/1000))
-        price = float(order['cummulativeQuoteQty'])/float(order['executedQty'])
-        op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
-        self.Trades.append(op)
-        self.refresh_positions(side,price,ammount)
-        msg = 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}'.format(side,ammount,symbol,price,price*ammount,t)
-        print(msg)
-        self.log_to_file(msg)
+            msg = '{} order could not be executed. {} {} {}'.format(side,err.error_message,err.status_code,err.error_code)
+            print(msg)
+            self.log_to_file(msg)
     
     def check_paper_order(self, side: str, price: float, ammount: float) -> tuple[bool,str]:
         """Check if a paper order can be executed based on current cash and coin positions."""
@@ -126,7 +128,7 @@ class Exchange():
         op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
         check = self.check_paper_order(side,price,ammount)
         if not check[0]:
-            msg = 'Order could not be executed. {}'.format(check[1])
+            msg = '{} order could not be executed. {}'.format(side,check[1])
             print(msg)
             self.log_to_file(msg)
         else:
@@ -147,13 +149,13 @@ class Exchange():
         try:
             time.sleep(duration)
         except KeyboardInterrupt:
-            print('KeyboardInterrupt')
+            print('\nKeyboardInterrupt')
         finally:
             self.close_connection()
 
     def close_connection(self) -> None:
         """Close connection to WebSocket, print current positions and deals made this session."""
-        print('Closing connection.')
+        print('\nClosing connection.')
         print(pd.DataFrame(self.Trades).to_string())
         self.log_to_file(pd.DataFrame(self.Trades).to_string())
         self.value_positions()
