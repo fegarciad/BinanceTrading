@@ -2,105 +2,38 @@
 # Interpret Command Line Arguments #
 ####################################
 
-import re
-import sys
+import argparse
 
 
 class CommandLine():
 
-    def __init__(self, args: str) -> None:
-        self.args = args
-
-    def check_params(self) -> None:
-        """Check format of given parameters."""
-        intervals = ['1m','3m','5m','15m','30m','1h','2h','4h','6h','8h','12h','1d','3d','1w','1M']
-        if self.interval not in intervals:
-            print('\nInterval has to be one of {}.'.format(intervals))
-            sys.exit()
-        try:
-            self.lookback = int(self.lookback)
-            self.duration = int(self.duration)
-        except ValueError:
-            print('\nLookback and Duration have to be integers.')
-            sys.exit()
-        try:
-            self.order_size = float(self.order_size)
-        except ValueError:
-            print('\nOrder Size has to be float.')
-            sys.exit()
-        if str(self.paper_trade) not in ['True','False']:
-            print('\nPaper Trade has to be True or False.')
-            sys.exit()
-        else:
-            self.paper_trade = self.paper_trade == 'True'
-        
-    def check_backtest_params(self) -> None:
-        """Check format of given parameters for backtesting."""
+    def __init__(self) -> None:
         pass
 
     def read_args(self) -> dict:
         """Read parameters given in command line."""
-        print("Setting params ...")
-        # Coin
-        try:
-            coinArg = re.findall('base:(\w+)',''.join(self.args))
-            self.coin = str(coinArg[0])
-            print("Coin:",self.coin)
-        except:
-            self.coin = 'BTC'
-            print("Coin:",self.coin)
-        # Interval
-        try:
-            intervArg = re.findall('interval:(\w+)',''.join(self.args))
-            self.interval = str(intervArg[0])
-            print("Interval:",self.interval)
-        except:
-            self.interval = '1m'
-            print("Interval:",self.interval)
-        # Lookback
-        try:
-            lookArg = re.findall('lookback:(\w+)',''.join(self.args))
-            self.lookback = str(lookArg[0])
-            print("Lookback:",self.lookback)
-        except:
-            self.lookback = 20
-            print("Lookback:",self.lookback)
-        # Order size
-        try:
-            orderArg = re.findall('order_size:(\w+)',''.join(self.args))
-            self.order_size = str(orderArg[0])
-            print("Order Size:",self.order_size)
-        except:
-            self.order_size = 0.01
-            print("Order Size:",self.order_size)
-        # Duration
-        try:
-            durArg = re.findall('duration:(\w+)',''.join(self.args))
-            self.duration = str(durArg[0])
-            print("Duration:",self.duration)
-        except:
-            self.duration = 600
-            print("Duration:",self.duration)
-        # Paper Trade
-        try:
-            paperArg = re.findall('paper_trade:(\w+)',''.join(self.args))
-            self.paper_trade = str(paperArg[0])
-            print("Paper Trade:",self.paper_trade)
-        except:
-            self.paper_trade = 'True'
-            print("Paper Trade:",self.paper_trade)
-        
-        self.check_params()
+        ap = argparse.ArgumentParser(description='Binance Trading Bot')
+        intervals = ['1m','15m','30m','1h','4h','12h','1d']
 
-        params = {
-            'coin': self.coin,
-            'interval': self.interval,
-            'lookback': self.lookback,
-            'order_size': self.order_size,
-            'duration': self.duration,
-            'paper_trade': self.paper_trade,
-        }
-        return params
+        # Coin
+        ap.add_argument("-c", "--coin", required=False, help="Coin [str] default: BTC",type=str,default='BTC')
+        # Interval
+        ap.add_argument("-i", "--interval", required=False, help="Interval [str] default: 1m",type=str,choices=intervals,default='1m')
+        # Lookback
+        ap.add_argument("-l", "--lookback", required=False, help="Lookback [int] default: 50",type=int,default=50)
+        # Order size
+        ap.add_argument("-o", "--ordersize", required=False, help="Order size [float] default: 0.0005",type=float,default=0.0005)
+        # Duration
+        ap.add_argument("-d", "--duration", required=False, help="Duration (seconds) [int] default: 600",type=int,default=600)
+        # Paper trade
+        ap.add_argument("-p", "--papertrade", required=False, help="Paper Trade, if called paper trading is DISABLED, else its enabled.",action="store_false")
+
+        self.params = vars(ap.parse_args())
+
+        print('Setting params.. -h for help.')
+        print(self.params)
+        
+        return self.params
 
     def read_backtest_args(self) -> dict:
         """Read parameters given in command line for backtesting."""
