@@ -54,10 +54,14 @@ class Exchange():
             self.Position = self.get_coin_balance(coin)
             self.CashPosition = self.get_coin_balance('USDT')
 
-    def set_paper_portfolio(self, coin: float, cash: float) -> None:
+    def set_paper_portfolio(self, coin_balance: float = 0, cash: float = 0, use_real_balance: bool = False, coin: str = '') -> None:
         """Set paper portfolio values after initializing exchange class."""
-        self.PaperPortfolio[0] = coin
-        self.PaperPortfolio[1] = cash
+        if use_real_balance:
+            self.PaperPortfolio[0] = self.get_coin_balance(coin)
+            self.PaperPortfolio[1] = self.get_coin_balance('USDT')
+        else:
+            self.PaperPortfolio[0] = coin_balance
+            self.PaperPortfolio[1] = cash
 
     def account_balance(self) -> pd.DataFrame:
         """Get current account balances from binance."""
@@ -143,7 +147,7 @@ class Exchange():
         try:
             time.sleep(duration)
         except KeyboardInterrupt:
-            raise
+            print('KeyboardInterrupt')
         finally:
             self.close_connection()
 
