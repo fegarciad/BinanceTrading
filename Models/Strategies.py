@@ -12,15 +12,16 @@ from Models.Utils import ema, macd, rsi, sma
 
 
 class TradingStrategy(ABC):
-
-    @abstractmethod
-    def signal(self, data: pd.DataFrame) -> str:
-        """Returns trading signal (Buy/Sell/Do nothing)."""
+    """Trading strategy base class."""
     
     @abstractmethod
     def __str__(self) -> str:
         """Returns name of strategy."""
 
+    @abstractmethod
+    def signal(self, data: pd.DataFrame) -> str:
+        """Returns trading signal (Buy/Sell/Do nothing)."""
+    
 
 @dataclass
 class MACDStrategy(TradingStrategy):
@@ -72,6 +73,7 @@ class MACDStrategy(TradingStrategy):
             order = buy_orders[-1] if buy_orders[-1] else sell_orders[-1]
         print(buy_orders[-1], sell_orders[-1], order)
         return order
+
 
 @dataclass
 class TMAStrategy(TradingStrategy):
@@ -127,6 +129,7 @@ class TMAStrategy(TradingStrategy):
             order = buy_orders[-1] if buy_orders[-1] else sell_orders[-1]
         print(buy_orders[-1], sell_orders[-1], order)
         return order
+
 
 @dataclass
 class RandomStrategy(TradingStrategy):
