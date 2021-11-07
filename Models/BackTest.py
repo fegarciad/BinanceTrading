@@ -3,24 +3,56 @@
 ##################
 
 import pandas as pd
-from Models.Strategies import TradingStrategy
+from scipy.optimize import brute
+
 from Models.Exchange import Exchange
+from Models.Strategies import TradingStrategy
+from Models.TradingBot import TradingBot
 
 
-class BackTest():
-    """Class to backtest strategies."""
+class Backtest():
     
-    def __init__(self, exchange: Exchange, strategy: TradingStrategy, periods: int, init_portfolio: tuple[float,float]) -> None:
+    def __init__(self, exchange: Exchange, tradingbot: TradingBot, strategy: TradingStrategy, periods: int, init_portfolio: tuple[float,float]) -> None:
         self.exchange = exchange
         self.strategy = strategy
+        self.tradingbot = tradingbot
         self.backtest_periods = periods
-        self.Position = init_portfolio[0]
-        self.CashPosition = init_portfolio[1]
+
+        assert periods > self.tradingbot.lookback, 'Backtest periods has to be larger than TradingBot lookback.'
+        assert self.tradingbot.paper_trade == True, 'Backtest can only run in paper trading mode.'
 
     def get_hist_data(self) -> pd.DataFrame:
         """Get historic price data to backtest strategies."""
+        data_list = self.exchange.init_candles(self.tradingbot.symbol,self.tradingbot.interval,self.backtest_periods)
+        data = self.exchange.candlelist_to_df(data_list)
+        return data
+
+    def backtest(self) -> int:
+        """Execute backtest on strategy."""
+        self.exchange.log_to_file('############\n# BACKTEST #\n############\n',init=True)
+        data = self.get_hist_data()
+        print('\nRunning Backest on {}\n'.format(str(self.strategy)))
+        self.exchange.value_positions()
+        self.init_wealth = self.exchange.Wealth
+        self.exchange.log_to_file('Init\n'+self.exchange.candlelist_to_df(data.iloc[:self.tradingbot.lookback]).to_string())
+
+        for i in range(self.tradingbot.lookback + 1,data.shape[0]):
+            live_data = data.iloc[:i]
+            self.tradingbot.exec_strategy(live_data)
+        
+        self.exchange.value_positions()
+        self.final_wealth = self.exchange.Wealth
+        return self.final_wealth - self.init_wealth
+
+    def set_params(self, params: tuple) -> None:
+        """Set strategy parameters."""
         pass
 
-    def backtest(self) -> None:
-        """Execute backtest on strategy."""
-        pass
+    def update_and_run(self, params: tuple) -> int:
+        """Update parameters and run strategy."""
+        return -self.backtest()
+
+    def optimize_params(self,param_ranges: tuple) -> None:
+        """Optimize strategy parameters."""
+        opt = brute(self.update_and_run, param_ranges, finish=None)
+        return opt, -self.update_and_run(opt)
