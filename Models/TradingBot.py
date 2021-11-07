@@ -10,10 +10,10 @@ from Models.Strategies import TradingStrategy
 
 class TradingBot():
 
-    def __init__(self, exchange: Exchange, strategy: TradingStrategy, coin: str, order_size: float, interval: str, duration: int, lookback: int, paper_trade: bool = False) -> None:
+    def __init__(self, exchange: Exchange, strategy: TradingStrategy, coin: str, order_size: float, interval: str, duration: int, lookback: int, paper_trade: bool = True) -> None:
         self.exchange = exchange
         self.strategy = strategy
-        self.symbol = coin+'USDT'
+        self.symbol = coin + 'USDT'
         self.order_size = order_size
         self.interval = interval
         self.duration = duration

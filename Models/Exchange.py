@@ -27,7 +27,7 @@ class Exchange():
         self.logging = logging
         self.log_to_file(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time())),init=True)
 
-        self.symbol = ''
+        self.Symbol = ''
         self.Trades = []
         self.Position = 0
         self.CashPosition = 0
@@ -46,7 +46,7 @@ class Exchange():
 
     def init_portfolio(self, coin: str, paper_trade: bool) -> None:
         """Initialize local portfolio to track orders and current positions."""
-        self.symbol = coin+'USDT'
+        self.Symbol = coin + 'USDT'
         if paper_trade:
             self.Position = self.PaperPortfolio[0]
             self.CashPosition = self.PaperPortfolio[1]
@@ -89,8 +89,9 @@ class Exchange():
 
     def value_positions(self) -> None:
         """Value current positions."""
-        price = float(self.Client.ticker_price(self.symbol)['price'])
-        msg = '{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.4f}\nTotal: {:.2f}\n'.format(self.symbol,self.Position,self.CashPosition,self.Commissions,self.CashPosition+price*self.Position-self.Commissions)
+        price = float(self.Client.ticker_price(self.Symbol)['price'])
+        self.Wealth = self.CashPosition+price*self.Position-self.Commissions
+        msg = '{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.4f}\nTotal: {:.2f}\n'.format(self.Symbol,self.Position,self.CashPosition,self.Commissions,self.Wealth)
         print(msg)
         self.log_to_file(msg)
 
