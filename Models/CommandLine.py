@@ -4,6 +4,8 @@
 
 import argparse
 
+import pandas as pd
+
 
 class CommandLine():
 
@@ -29,7 +31,7 @@ class CommandLine():
         self.params = vars(ap.parse_args())
 
         print('Setting params.. -h for help.')
-        print(self.params)
+        print(pd.DataFrame(self.params,index=[0]).to_string(index=False))
         
         return self.params
 
@@ -50,7 +52,7 @@ class CommandLine():
         self.params = vars(ap.parse_args())
 
         print('Setting params.. -h for help.')
-        print(self.params)
+        print(pd.DataFrame(self.params,index=[0]).to_string(index=False))
         
         return self.params
         
