@@ -19,8 +19,6 @@ class CommandLine():
         ap.add_argument("-c", "--coin", required=False, help="Coin [str] default: BTC",type=str,default='BTC')
         # Interval
         ap.add_argument("-i", "--interval", required=False, help="Interval [str] default: 1m",type=str,choices=intervals,default='1m')
-        # Lookback
-        ap.add_argument("-l", "--lookback", required=False, help="Lookback [int] default: 50",type=int,default=50)
         # Order size
         ap.add_argument("-o", "--ordersize", required=False, help="Order size [float] default: 0.0005",type=float,default=0.0005)
         # Duration
@@ -37,5 +35,22 @@ class CommandLine():
 
     def read_backtest_args(self) -> dict:
         """Read parameters given in command line for backtesting."""
-        pass
+        ap = argparse.ArgumentParser(description='Binance Trading Bot')
+        intervals = ['1m','15m','30m','1h','4h','12h','1d']
+
+        # Coin
+        ap.add_argument("-c", "--coin", required=False, help="Coin [str] default: BTC",type=str,default='BTC')
+        # Interval
+        ap.add_argument("-i", "--interval", required=False, help="Interval [str] default: 1m",type=str,choices=intervals,default='1m')
+        # Order size
+        ap.add_argument("-o", "--ordersize", required=False, help="Order size [float] default: 0.0005",type=float,default=0.0005)
+        # Backtest period
+        ap.add_argument("-b", "--backtestperiod", required=False, help="Number of data points for backtest [int] default: 500",type=int,default=500)
+        
+        self.params = vars(ap.parse_args())
+
+        print('Setting params.. -h for help.')
+        print(self.params)
+        
+        return self.params
         
