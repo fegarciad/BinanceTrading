@@ -40,12 +40,13 @@ class Backtest():
 
         for i in range(self.lookback + 1,data.shape[0]):
             live_data = data.iloc[:i]
+            self.exchange.log_to_file(live_data.to_string(index=False))
             self.tradingbot.exec_strategy(live_data)
         
         self.exchange.value_positions()
         print('Number of trades: {}'.format(len(self.exchange.Trades)))
         self.final_wealth = self.exchange.Wealth
-        print('Return of {}: {:.2f}'.format(str(self.strategy),self.final_wealth - self.init_wealth))
+        print('Return of {}: {:.2f} ({:.2f}%)'.format(str(self.strategy),self.final_wealth-self.init_wealth,(self.final_wealth/self.init_wealth - 1)*100))
         return self.final_wealth - self.init_wealth
 
     def set_params(self, params: tuple) -> None:
