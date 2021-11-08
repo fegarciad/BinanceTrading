@@ -12,7 +12,7 @@ from Models.TradingBot import TradingBot
 
 class Backtest():
     
-    def __init__(self, exchange: Exchange, tradingbot: TradingBot, strategy: TradingStrategy, periods: int, init_portfolio: tuple[float,float]) -> None:
+    def __init__(self, exchange: Exchange, tradingbot: TradingBot, strategy: TradingStrategy, periods: int) -> None:
         self.exchange = exchange
         self.strategy = strategy
         self.tradingbot = tradingbot
@@ -33,10 +33,10 @@ class Backtest():
         """Execute backtest on strategy."""
         self.exchange.log_to_file('############\n# BACKTEST #\n############\n',init=True)
         data = self.get_hist_data()
-        print('\nRunning Backest on {}\n'.format(str(self.strategy)))
+        print('\nRunning Backest on {}\n, {} Data Points'.format(str(self.strategy),self.backtest_periods))
         self.exchange.value_positions()
         self.init_wealth = self.exchange.Wealth
-        self.exchange.log_to_file('Init\n'+self.exchange.candlelist_to_df(data.iloc[:self.lookback]).to_string(index=False))
+        self.exchange.log_to_file('Init\n' + data.iloc[:self.lookback].to_string(index=False))
 
         for i in range(self.lookback + 1,data.shape[0]):
             live_data = data.iloc[:i]

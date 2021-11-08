@@ -91,7 +91,7 @@ class Exchange():
         """Value current positions."""
         price = float(self.Client.ticker_price(self.Symbol)['price'])
         self.Wealth = self.CashPosition+price*self.Position-self.Commissions
-        msg = '{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.4f}\nTotal: {:.2f}\n'.format(self.Symbol,self.Position,self.CashPosition,self.Commissions,self.Wealth)
+        msg = '\n{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.4f}\nTotal: {:.2f}\n'.format(self.Symbol,self.Position,self.CashPosition,self.Commissions,self.Wealth)
         print(msg)
         self.log_to_file(msg)
 

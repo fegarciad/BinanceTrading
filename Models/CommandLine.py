@@ -35,7 +35,7 @@ class CommandLine():
 
     def read_backtest_args(self) -> dict:
         """Read parameters given in command line for backtesting."""
-        ap = argparse.ArgumentParser(description='Binance Trading Bot')
+        ap = argparse.ArgumentParser(description='Binance Trading Bot Backtest')
         intervals = ['1m','15m','30m','1h','4h','12h','1d']
 
         # Coin
