@@ -160,6 +160,7 @@ class Exchange():
         print(pd.DataFrame(self.Trades).to_string(index=False))
         self.log_to_file(pd.DataFrame(self.Trades).to_string(index=False))
         self.value_positions()
+        print('Number of trades: {}'.format(len(self.Trades)))
         self.log_to_file(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time())))
         self.WebsocketClient.stop()
 

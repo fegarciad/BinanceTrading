@@ -37,7 +37,7 @@ class MACDStrategy(TradingStrategy):
 
     assert period_long > period_short
 
-    def get_loockback(self) -> int:
+    def get_lookback(self) -> int:
         return max([self.period_long,self.period_signal]) + 5
 
     def __str__(self) -> str:
@@ -80,7 +80,7 @@ class MACDStrategy(TradingStrategy):
             order = ''
         else:
             order = buy_orders[-1] if buy_orders[-1] else sell_orders[-1]
-        print(buy_orders[-1], sell_orders[-1], order)
+        
         return order
 
 
@@ -94,7 +94,7 @@ class TMAStrategy(TradingStrategy):
 
     assert period_long > period_mid > period_short
 
-    def get_loockback(self) -> int:
+    def get_lookback(self) -> int:
         return self.period_long + 5
 
     def __str__(self) -> str:
@@ -141,7 +141,7 @@ class TMAStrategy(TradingStrategy):
             order = ''
         else:
             order = buy_orders[-1] if buy_orders[-1] else sell_orders[-1]
-        print(buy_orders[-1], sell_orders[-1], order)
+        
         return order
 
 

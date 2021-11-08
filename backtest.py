@@ -25,7 +25,7 @@ def main(coin: str, order_size: float, interval: str, backtest_period: int) -> N
     paper_coin = 0.01
     exchange.set_paper_portfolio(coin_balance=paper_coin,cash=paper_cash) # To use actual balance to backtest set: use_real_balance = True and pass coin name 
 
-    strategy = RandomStrategy()
+    strategy = MACDStrategy()
     tradebot = TradingBot(exchange,strategy,coin,order_size,interval,duration=0,paper_trade=True)
     backtest = Backtest(exchange,tradebot,strategy,backtest_period)
     backtest.run_backtest()

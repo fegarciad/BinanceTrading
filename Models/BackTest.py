@@ -33,7 +33,7 @@ class Backtest():
         """Execute backtest on strategy."""
         self.exchange.log_to_file('############\n# BACKTEST #\n############\n',init=True)
         data = self.get_hist_data()
-        print('\nRunning Backest on {}\n, {} Data Points'.format(str(self.strategy),self.backtest_periods))
+        print('\nRunning Backest on {}, {} Data Points\n'.format(str(self.strategy),self.backtest_periods))
         self.exchange.value_positions()
         self.init_wealth = self.exchange.Wealth
         self.exchange.log_to_file('Init\n' + data.iloc[:self.lookback].to_string(index=False))
@@ -43,8 +43,9 @@ class Backtest():
             self.tradingbot.exec_strategy(live_data)
         
         self.exchange.value_positions()
+        print('Number of trades: {}'.format(len(self.exchange.Trades)))
         self.final_wealth = self.exchange.Wealth
-        print(self.final_wealth - self.init_wealth)
+        print('Return of {}: {:.2f}'.format(str(self.strategy),self.final_wealth - self.init_wealth))
         return self.final_wealth - self.init_wealth
 
     def set_params(self, params: tuple) -> None:
