@@ -13,6 +13,10 @@ from Models.Utils import ema, macd, rsi, sma
 
 class TradingStrategy(ABC):
     """Trading strategy base class."""
+
+    @abstractmethod
+    def get_lookback(self) -> int:
+        """Get minimum number of historic data points required to run strategy."""
     
     @abstractmethod
     def __str__(self) -> str:
@@ -30,6 +34,11 @@ class MACDStrategy(TradingStrategy):
     period_long: int = 26
     period_short: int = 12 
     period_signal: int = 9
+
+    assert period_long > period_short
+
+    def get_loockback(self) -> int:
+        return max([self.period_long,self.period_signal]) + 5
 
     def __str__(self) -> str:
         return 'MACD Strategy (long={}, short={}, signal={})'.format(self.period_long,self.period_short,self.period_signal)
@@ -83,6 +92,11 @@ class TMAStrategy(TradingStrategy):
     period_mid: int = 21
     period_short: int = 5
 
+    assert period_long > period_mid > period_short
+
+    def get_loockback(self) -> int:
+        return self.period_long + 5
+
     def __str__(self) -> str:
         return 'Three Moving Average Strategy (long={}, mid={}, short={})'.format(self.period_long,self.period_mid,self.period_short)
 
@@ -134,6 +148,9 @@ class TMAStrategy(TradingStrategy):
 @dataclass
 class RandomStrategy(TradingStrategy):
     """Random trading strategy for testing."""
+
+    def get_lookback(self) -> int:
+        return 5
 
     def __str__(self) -> str:
         return 'Random Strategy'

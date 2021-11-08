@@ -9,26 +9,29 @@ https://dev.binance.vision/t/cant-run-any-websocket-example-on-binance-connector
 
 from config import API_KEY, API_SECRET
 
+from Models.Backtest import Backtest
 from Models.CommandLine import CommandLine
 from Models.Exchange import Exchange
 from Models.Strategies import MACDStrategy, RandomStrategy, TMAStrategy
 from Models.TradingBot import TradingBot
-from Models.Backtest import Backtest
 
 
 # Main function 
-def main(coin: str, order_size: float, interval: str, backtest_period: int, lookback: int) -> None:
+def main(coin: str, order_size: float, interval: str, backtest_period: int) -> None:
     """Main backtest function."""
     exchange = Exchange(API_KEY,API_SECRET)
     
-    exchange.set_paper_portfolio(use_real_balance=True, coin=coin)
+    paper_cash = 500
+    paper_coin = 0.01
+    exchange.set_paper_portfolio(coin_balance=paper_coin,cash=paper_cash) # To use actual balance to backtest set: use_real_balance = True and pass coin name 
 
     strategy = RandomStrategy()
-    tradebot = TradingBot(exchange,strategy,coin,order_size,interval,lookback=lookback,paper_trade=True)
+    tradebot = TradingBot(exchange,strategy,coin,order_size,interval,paper_trade=True)
     backtest = Backtest(exchange,tradebot,strategy,backtest_period)
+    backtest.run_backtest()
 
 
 if __name__ == '__main__':
     commandline = CommandLine()
     args = commandline.read_backtest_args()
-    main(args['coin'],args['ordersize'],args['interval'],args['backtestperiod'],args['lookback'])
+    main(args['coin'],args['ordersize'],args['interval'],args['backtestperiod'])

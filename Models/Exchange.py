@@ -157,8 +157,8 @@ class Exchange():
     def close_connection(self) -> None:
         """Close connection to WebSocket, print current positions and deals made this session."""
         print('\nClosing connection.')
-        print(pd.DataFrame(self.Trades).to_string())
-        self.log_to_file(pd.DataFrame(self.Trades).to_string())
+        print(pd.DataFrame(self.Trades).to_string(index=False))
+        self.log_to_file(pd.DataFrame(self.Trades).to_string(index=False))
         self.value_positions()
         self.log_to_file(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time())))
         self.WebsocketClient.stop()
