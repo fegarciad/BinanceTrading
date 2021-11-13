@@ -30,7 +30,7 @@ class TradingBot():
         """Print live candlestick data to screen."""
         self.exchange.connect_ws(lambda x: print(x),self.symbol,self.interval,self.duration)
 
-    def exec_strategy(self, data: pd.DataFrame) -> None:
+    def exec_strategy(self, data: pd.DataFrame) -> str:
         """Check if there is buy/sell signal and execute it."""
         signal = self.strategy.signal(data)
         if signal:
@@ -39,6 +39,7 @@ class TradingBot():
             msg = 'No order was placed.'
             print(msg)
             self.exchange.log_to_file(msg)
+        return signal
 
     def ws_handler(self, msg: str) -> None:
         """Function to handle incoming WebSocket candle data and pass it to the strategy."""

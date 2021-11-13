@@ -29,6 +29,7 @@ def main(coin: str, order_size: float, interval: str, backtest_period: int) -> N
     tradebot = TradingBot(exchange,strategy,coin,order_size,interval,duration=0,paper_trade=True)
     backtest = Backtest(exchange,tradebot,strategy,backtest_period)
     backtest.run_backtest()
+    backtest.plot_backtest()
 
 
 if __name__ == '__main__':

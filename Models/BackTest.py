@@ -2,8 +2,9 @@
 # Backtest Class #
 ##################
 
+import matplotlib
+import matplotlib.pyplot as plt
 import pandas as pd
-from scipy.optimize import brute
 
 from Models.Exchange import Exchange
 from Models.Strategies import TradingStrategy
@@ -17,7 +18,6 @@ class Backtest():
         self.strategy = strategy
         self.tradingbot = tradingbot
         self.backtest_periods = periods
-        self.lookback = strategy.get_lookback()
 
         if self.tradingbot.paper_trade != True:
             print('Backtest can only run in paper trading mode.')
@@ -36,28 +36,38 @@ class Backtest():
         print('\nRunning Backest on {}, {} Data Points\n'.format(str(self.strategy),self.backtest_periods))
         self.exchange.value_positions()
         self.init_wealth = self.exchange.Wealth
-        self.exchange.log_to_file('Init\n' + data.iloc[:self.lookback].to_string(index=False))
+        self.exchange.log_to_file('Init\n' + data.iloc[:self.strategy.get_lookback()].to_string(index=False))
 
-        for i in range(self.lookback + 1,data.shape[0]):
+        for i in range(self.strategy.get_lookback() + 1,data.shape[0]):
             live_data = data.iloc[:i]
             self.exchange.log_to_file(live_data.to_string(index=False))
-            self.tradingbot.exec_strategy(live_data)
+            sig = self.tradingbot.exec_strategy(live_data)
+            if sig:
+                self.exchange.Trades[-1]['Time'] = live_data.iloc[-1]['Close time']
         
         self.exchange.value_positions()
         print('Number of trades: {}'.format(len(self.exchange.Trades)))
         self.final_wealth = self.exchange.Wealth
+        self.BacktestDF = self.backtest_dataframe(live_data)
         print('Return of {}: {:.2f} ({:.2f}%)'.format(str(self.strategy),self.final_wealth-self.init_wealth,(self.final_wealth/self.init_wealth - 1)*100))
         return self.final_wealth - self.init_wealth
 
-    def set_params(self, params: tuple) -> None:
-        """Set strategy parameters."""
-        pass
+    def backtest_dataframe(self,data: pd.DataFrame) -> pd.DataFrame:
+        TradeDF = pd.DataFrame(self.exchange.Trades)
+        TradeDF.rename(columns={'Time':'Close time'},inplace=True)
+        BacktestDF = pd.merge(data,TradeDF[['Side','Close time']],on='Close time',how='left')
+        BacktestDF['BUY'] = BacktestDF.loc[BacktestDF['Side'] == 'BUY','Close price']
+        BacktestDF['SELL'] = BacktestDF.loc[BacktestDF['Side'] == 'SELL','Close price']
+        return BacktestDF
 
-    def update_and_run(self, params: tuple) -> int:
-        """Update parameters and run strategy."""
-        return -self.backtest()
-
-    def optimize_params(self,param_ranges: tuple) -> None:
-        """Optimize strategy parameters."""
-        opt = brute(self.update_and_run, param_ranges, finish=None)
-        return opt, -self.update_and_run(opt)
+    def plot_backtest(self) -> None:
+        _, ax = plt.subplots(1,1,figsize=(10,8))
+        ax.plot(self.BacktestDF['Close time'],self.BacktestDF['Close price'],zorder=1)
+        ax.scatter(self.BacktestDF['Close time'],self.BacktestDF['BUY'], color='green', label='Buy', marker='^',s=75,zorder=2)
+        ax.scatter(self.BacktestDF['Close time'],self.BacktestDF['SELL'], color='red', label='Sell', marker='v',s=75,zorder=2)
+        ax.set_xlabel('Dates',fontsize=20)
+        ax.set_title('Backtest {} {} periods'.format(str(self.strategy),self.backtest_periods),fontsize=30,y=1.03)
+        ax.legend(fontsize=15)
+        ax.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
+        plt.savefig('Images//Backtest {} {} periods.png'.format(str(self.strategy),self.backtest_periods))
+        plt.show()
