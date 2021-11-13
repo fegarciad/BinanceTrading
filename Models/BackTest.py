@@ -39,7 +39,7 @@ class Backtest():
         """Execute backtest on strategy."""
         self.exchange.log_to_file('############\n# BACKTEST #\n############\n',init=True)
         data = self.get_hist_data()
-        print('\nRunning Backest on {}, {} Data Points\n'.format(str(self.strategy),self.backtest_periods))
+        print('\nRunning Backest on {}, {} Data Points'.format(str(self.strategy),self.backtest_periods))
         self.init_wealth = self.value_portfolio(data.iloc[0]['Open price'])
         self.exchange.log_to_file('Init\n' + data.iloc[:self.strategy.get_lookback()].to_string(index=False))
 
@@ -50,7 +50,7 @@ class Backtest():
             if sig:
                 self.exchange.Trades[-1]['Time'] = live_data.iloc[-1]['Close time']
         
-        print('Number of trades: {}'.format(len(self.exchange.Trades)))
+        print('\nNumber of trades: {}'.format(len(self.exchange.Trades)))
         self.final_wealth = self.value_portfolio(data.iloc[-1]['Close price'])
         self.BacktestDF = self.backtest_dataframe(live_data)
         print('Return of {}: ${:.2f} ({:.2f}%)'.format(str(self.strategy),self.final_wealth-self.init_wealth,(self.final_wealth/self.init_wealth - 1)*100))
