@@ -15,7 +15,6 @@ from Models.Strategies import MACDStrategy, RandomStrategy, TMAStrategy
 from Models.TradingBot import TradingBot
 
 
-# Main function 
 def main(coin: str, order_size: float, interval: str, duration: int, paper_trade: bool) -> None:
     """Main trading function."""
     exchange = Exchange(API_KEY,API_SECRET)

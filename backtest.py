@@ -16,7 +16,6 @@ from Models.Strategies import MACDStrategy, RandomStrategy, TMAStrategy
 from Models.TradingBot import TradingBot
 
 
-# Main function 
 def main(coin: str, order_size: float, interval: str, backtest_period: int) -> None:
     """Main backtest function."""
     exchange = Exchange(API_KEY,API_SECRET)
@@ -25,7 +24,7 @@ def main(coin: str, order_size: float, interval: str, backtest_period: int) -> N
     paper_coin = 0.01
     exchange.set_paper_portfolio(coin_balance=paper_coin,cash=paper_cash) # To use actual balance to backtest set: use_real_balance = True and pass coin name 
 
-    strategy = TMAStrategy()
+    strategy = TMAStrategy(period_long=63,period_mid=42,period_short=21)
     tradebot = TradingBot(exchange,strategy,coin,order_size,interval,duration=0,paper_trade=True)
     backtest = Backtest(exchange,tradebot,strategy,backtest_period)
     backtest.run_backtest()

@@ -26,7 +26,7 @@ class Backtest():
             sys.exit(1)
 
         if self.backtest_periods < self.strategy.get_lookback():
-            print('\nMore periods are required to run {}.'.format(str(self.strategy)))
+            print('\nMore than {} periods are required to run {}.'.format(self.strategy.get_lookback(),str(self.strategy)))
             sys.exit(1)
 
     def get_hist_data(self) -> pd.DataFrame:
@@ -50,7 +50,11 @@ class Backtest():
             if sig:
                 self.exchange.Trades[-1]['Time'] = live_data.iloc[-1]['Close time']
         
-        print('\nNumber of trades: {}'.format(len(self.exchange.Trades)))
+        msg = '\nNumber of trades: {}'.format(len(self.exchange.Trades))
+        print(msg)
+        self.exchange.log_to_file(msg)
+        print(pd.DataFrame(self.exchange.Trades))
+        self.exchange.log_to_file(pd.DataFrame(self.exchange.Trades).to_string(index=False))
         self.final_wealth = self.value_portfolio(data.iloc[-1]['Close price'])
         self.BacktestDF = self.backtest_dataframe(live_data)
         print('Return of {}: ${:.2f} ({:.2f}%)'.format(str(self.strategy),self.final_wealth-self.init_wealth,(self.final_wealth/self.init_wealth - 1)*100))
@@ -83,8 +87,9 @@ class Backtest():
         ax.scatter(self.BacktestDF['Close time'],self.BacktestDF['BUY'], color='green', label='Buy', marker='^',s=75,zorder=2)
         ax.scatter(self.BacktestDF['Close time'],self.BacktestDF['SELL'], color='red', label='Sell', marker='v',s=75,zorder=2)
         ax.set_xlabel('Dates',fontsize=20)
-        ax.set_title('Backtest {} {} periods'.format(str(self.strategy),self.backtest_periods),fontsize=30,y=1.03,loc='center',wrap=True)
+        title = 'Backtest {} {} periods {} ticks'.format(str(self.strategy),self.backtest_periods,self.tradingbot.interval)
+        ax.set_title(title,fontsize=30,y=1.03,loc='center',wrap=True)
         ax.legend(fontsize=15)
         ax.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
-        plt.savefig('Images//Backtest {} {} periods.png'.format(str(self.strategy),self.backtest_periods))
+        plt.savefig('Images//'+title+'.png')
         plt.show()
