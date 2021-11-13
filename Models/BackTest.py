@@ -57,6 +57,7 @@ class Backtest():
         return self.final_wealth - self.init_wealth
 
     def value_portfolio(self, price: float) -> float:
+        """Value current portfolio."""
         cash = self.exchange.CashPosition
         coin = self.exchange.Position
         commissions = self.exchange.Commissions
@@ -67,6 +68,7 @@ class Backtest():
         return wealth
 
     def backtest_dataframe(self,data: pd.DataFrame) -> pd.DataFrame:
+        """Create dataframe with price and trade data from backtest."""
         TradeDF = pd.DataFrame(self.exchange.Trades)
         TradeDF.rename(columns={'Time':'Close time'},inplace=True)
         BacktestDF = pd.merge(data,TradeDF[['Side','Close time']],on='Close time',how='left')
@@ -75,6 +77,7 @@ class Backtest():
         return BacktestDF
 
     def plot_backtest(self) -> None:
+        """Plot price chart and entry and exit signals."""
         _, ax = plt.subplots(1,1,figsize=(10,8))
         ax.plot(self.BacktestDF['Close time'],self.BacktestDF['Close price'],zorder=1)
         ax.scatter(self.BacktestDF['Close time'],self.BacktestDF['BUY'], color='green', label='Buy', marker='^',s=75,zorder=2)
