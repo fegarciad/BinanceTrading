@@ -2,6 +2,8 @@
 # Backtest Class #
 ##################
 
+import sys
+
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -20,8 +22,12 @@ class Backtest():
         self.backtest_periods = periods
 
         if self.tradingbot.paper_trade != True:
-            print('Backtest can only run in paper trading mode.')
-            self.exchange.close_connection()
+            print('\nBacktest can only run in paper trading mode.')
+            sys.exit(1)
+
+        if self.backtest_periods < self.strategy.get_lookback():
+            print('\nMore periods are required to run {}.'.format(str(self.strategy)))
+            sys.exit(1)
 
     def get_hist_data(self) -> pd.DataFrame:
         """Get historic price data to backtest strategies."""
@@ -34,8 +40,7 @@ class Backtest():
         self.exchange.log_to_file('############\n# BACKTEST #\n############\n',init=True)
         data = self.get_hist_data()
         print('\nRunning Backest on {}, {} Data Points\n'.format(str(self.strategy),self.backtest_periods))
-        self.exchange.value_positions()
-        self.init_wealth = self.exchange.Wealth
+        self.init_wealth = self.value_portfolio(data.iloc[0]['Open price'])
         self.exchange.log_to_file('Init\n' + data.iloc[:self.strategy.get_lookback()].to_string(index=False))
 
         for i in range(self.strategy.get_lookback() + 1,data.shape[0]):
@@ -45,12 +50,21 @@ class Backtest():
             if sig:
                 self.exchange.Trades[-1]['Time'] = live_data.iloc[-1]['Close time']
         
-        self.exchange.value_positions()
         print('Number of trades: {}'.format(len(self.exchange.Trades)))
-        self.final_wealth = self.exchange.Wealth
+        self.final_wealth = self.value_portfolio(data.iloc[-1]['Close price'])
         self.BacktestDF = self.backtest_dataframe(live_data)
-        print('Return of {}: {:.2f} ({:.2f}%)'.format(str(self.strategy),self.final_wealth-self.init_wealth,(self.final_wealth/self.init_wealth - 1)*100))
+        print('Return of {}: ${:.2f} ({:.2f}%)'.format(str(self.strategy),self.final_wealth-self.init_wealth,(self.final_wealth/self.init_wealth - 1)*100))
         return self.final_wealth - self.init_wealth
+
+    def value_portfolio(self, price: float) -> float:
+        cash = self.exchange.CashPosition
+        coin = self.exchange.Position
+        commissions = self.exchange.Commissions
+        wealth = cash + coin*price - commissions
+        msg = '\n{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.2f}\nTotal: {:.2f}\n'.format(self.exchange.Symbol,coin,cash,commissions,wealth)
+        print(msg)
+        self.exchange.log_to_file(msg)
+        return wealth
 
     def backtest_dataframe(self,data: pd.DataFrame) -> pd.DataFrame:
         TradeDF = pd.DataFrame(self.exchange.Trades)
@@ -66,7 +80,7 @@ class Backtest():
         ax.scatter(self.BacktestDF['Close time'],self.BacktestDF['BUY'], color='green', label='Buy', marker='^',s=75,zorder=2)
         ax.scatter(self.BacktestDF['Close time'],self.BacktestDF['SELL'], color='red', label='Sell', marker='v',s=75,zorder=2)
         ax.set_xlabel('Dates',fontsize=20)
-        ax.set_title('Backtest {} {} periods'.format(str(self.strategy),self.backtest_periods),fontsize=30,y=1.03)
+        ax.set_title('Backtest {} {} periods'.format(str(self.strategy),self.backtest_periods),fontsize=30,y=1.03,loc='center',wrap=True)
         ax.legend(fontsize=15)
         ax.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
         plt.savefig('Images//Backtest {} {} periods.png'.format(str(self.strategy),self.backtest_periods))
