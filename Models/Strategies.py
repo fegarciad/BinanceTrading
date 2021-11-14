@@ -29,7 +29,7 @@ class TradingStrategy(ABC):
 
 @dataclass
 class MACDStrategy(TradingStrategy):
-    """MACD strategy, if MACD line crosses signal line, buy or sell."""
+    """MACD Strategy: If MACD line crosses signal line, buy or sell."""
     
     period_long: int = 26
     period_short: int = 12 
@@ -86,7 +86,7 @@ class MACDStrategy(TradingStrategy):
 
 @dataclass
 class TMAStrategy(TradingStrategy):
-    """Three Moving Average Strategy, if MA's cross buy or sell"""
+    """Three Moving Average Strategy: If MA's cross, buy or sell"""
 
     period_long: int = 63
     period_mid: int = 21
@@ -147,7 +147,7 @@ class TMAStrategy(TradingStrategy):
 
 @dataclass
 class RandomStrategy(TradingStrategy):
-    """Random trading strategy for testing."""
+    """Random Strategy: For testing purposes."""
 
     def get_lookback(self) -> int:
         return 5

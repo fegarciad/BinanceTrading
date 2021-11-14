@@ -95,6 +95,10 @@ class Exchange():
         print(msg)
         self.log_to_file(msg)
 
+    def check_profit_loss(self) -> None:
+        """Check profit and loss targets, exit program if they are met."""
+        pass
+
     def market_order(self, symbol: str, side: str, ammount: float) -> None:
         """Send market execution order to binance to get filled."""
         params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": ammount}

@@ -81,7 +81,7 @@ class Backtest():
         return BacktestDF
 
     def plot_backtest(self) -> None:
-        """Plot price chart and entry and exit signals."""
+        """Plot price chart, entry and exit signals."""
         _, ax = plt.subplots(1,1,figsize=(10,8))
         ax.plot(self.BacktestDF['Close time'],self.BacktestDF['Close price'],zorder=1)
         ax.scatter(self.BacktestDF['Close time'],self.BacktestDF['BUY'], color='green', label='Buy', marker='^',s=75,zorder=2)

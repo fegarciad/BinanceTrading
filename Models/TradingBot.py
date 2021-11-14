@@ -48,14 +48,14 @@ class TradingBot():
             if changed:
                 self.CandleDF = self.exchange.candlelist_to_df(self.CandleList)
                 self.exchange.log_to_file(self.CandleDF.to_string(index=False))
+                self.exchange.check_profit_loss()
                 self.exec_strategy(self.CandleDF)
         except KeyError:
             if msg == {'result': None, 'id': 1}:
                 pass
             else:
                 print(msg)
-                self.exchange.close_connection()
-                raise
+                self.exchange.close_connection()            
 
     def run(self) -> None:
         """Initialize portfolio, connecto to WebSocket and run strategy."""
