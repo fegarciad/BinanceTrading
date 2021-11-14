@@ -15,18 +15,18 @@ from Models.Strategies import MACDStrategy, RandomStrategy, TMAStrategy
 from Models.TradingBot import TradingBot
 
 
-def main(coin: str, order_size: float, interval: str, duration: int, paper_trade: bool) -> None:
+def main(coin: str, order_size: float, interval: str, duration: int, profit: float, loss: float, paper_trade: bool) -> None:
     """Main trading function."""
     exchange = Exchange(API_KEY,API_SECRET)
     
     exchange.set_paper_portfolio(use_real_balance=True, coin=coin)
 
     strategy = RandomStrategy()
-    tradebot = TradingBot(exchange,strategy,coin,order_size,interval,duration,paper_trade)
+    tradebot = TradingBot(exchange,strategy,coin,order_size,interval,duration,profit,loss,paper_trade)
     tradebot.run()
 
 
 if __name__ == '__main__':
     commandline = CommandLine()
     args = commandline.read_args()
-    main(args['coin'],args['ordersize'],args['interval'],args['duration'],args['papertrade'])
+    main(args['Coin'],args['Ordersize'],args['Interval'],args['Duration'],args['Profit'],args['Loss'],args['Papertrade'])

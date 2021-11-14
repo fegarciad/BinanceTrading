@@ -25,7 +25,7 @@ def main(coin: str, order_size: float, interval: str, backtest_period: int) -> N
     exchange.set_paper_portfolio(coin_balance=paper_coin,cash=paper_cash) # To use actual balance to backtest set: use_real_balance = True and pass coin name 
 
     strategy = TMAStrategy(period_long=63,period_mid=42,period_short=21)
-    tradebot = TradingBot(exchange,strategy,coin,order_size,interval,duration=0,paper_trade=True)
+    tradebot = TradingBot(exchange,strategy,coin,order_size,interval,duration=0,profit=0,loss=0,paper_trade=True)
     backtest = Backtest(exchange,tradebot,strategy,backtest_period)
     backtest.run_backtest()
     backtest.plot_backtest()
@@ -34,4 +34,4 @@ def main(coin: str, order_size: float, interval: str, backtest_period: int) -> N
 if __name__ == '__main__':
     commandline = CommandLine()
     args = commandline.read_backtest_args()
-    main(args['coin'],args['ordersize'],args['interval'],args['backtestperiod'])
+    main(args['Coin'],args['Ordersize'],args['Interval'],args['Backtest period'])

@@ -87,17 +87,31 @@ class Exchange():
             self.CashPosition += ammount*price
             self.Commissions += ammount*price*self.commission
 
-    def value_positions(self) -> None:
+    def value_positions(self,init=False,verb=True) -> None:
         """Value current positions."""
         price = float(self.Client.ticker_price(self.Symbol)['price'])
         self.Wealth = self.CashPosition+price*self.Position-self.Commissions
+        if init:
+            self.init_Wealth = self.Wealth
         msg = '\n{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.2f}\nTotal: {:.2f}\n'.format(self.Symbol,self.Position,self.CashPosition,self.Commissions,self.Wealth)
-        print(msg)
-        self.log_to_file(msg)
+        if verb:
+            print(msg)
+            self.log_to_file(msg)
 
-    def check_profit_loss(self) -> None:
+    def check_profit_loss(self,profit,loss) -> None:
         """Check profit and loss targets, exit program if they are met."""
-        pass
+        self.value_positions(verb=False)
+        current_return = (self.Wealth/self.init_Wealth - 1)*100
+        if current_return > profit:
+            msg = 'Profit target met {}%, exiting program.'.format(current_return)
+            print(msg)
+            self.log_to_file('\n{}\n'.format(msg))
+            self.close_connection()
+        if current_return < loss:
+            msg = 'Stop loss met {}%, exiting program.'.format(current_return)
+            print(msg)
+            self.log_to_file('\n{}\n'.format(msg))
+            self.close_connection()
 
     def market_order(self, symbol: str, side: str, ammount: float) -> None:
         """Send market execution order to binance to get filled."""
