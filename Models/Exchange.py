@@ -25,7 +25,7 @@ class Exchange():
         
         self.log_file = os.path.join(os.getcwd(),'log_file.txt')
         self.logging = logging
-        self.log_to_file(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time())),init=True)
+        self.log_to_file('Started at: {}'.format(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))),init=True)
 
         self.Symbol = ''
         self.Trades = []
@@ -111,11 +111,11 @@ class Exchange():
             self.refresh_positions(side,price,ammount)
             msg = 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}'.format(side,ammount,symbol,price,price*ammount,t)
             print(msg)
-            self.log_to_file(msg)
+            self.log_to_file('\n{}\n'.format(msg))
         except ClientError as err:
             msg = '{} order could not be executed. {} {} {}'.format(side,err.error_message,err.status_code,err.error_code)
             print(msg)
-            self.log_to_file(msg)
+            self.log_to_file('\n{}\n'.format(msg))
     
     def check_paper_order(self, side: str, price: float, ammount: float) -> tuple[bool,str]:
         """Check if a paper order can be executed based on current cash and coin positions."""
@@ -135,13 +135,13 @@ class Exchange():
         if not check[0]:
             msg = '{} order could not be executed. {}'.format(side,check[1])
             print(msg)
-            self.log_to_file(msg)
+            self.log_to_file('\n{}\n'.format(msg))
         else:
             self.Trades.append(op)
             self.refresh_positions(side,price,ammount)
             msg = 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}'.format(side,ammount,symbol,price,price*ammount,t)
             print(msg)
-            self.log_to_file(msg)
+            self.log_to_file('\n{}\n'.format(msg))
 
     def connect_ws(self, handler: callable, symbol: str, interval: str, duration: int) -> None:
         """Connect to WebSocket."""
@@ -161,11 +161,11 @@ class Exchange():
     def close_connection(self) -> None:
         """Close connection to WebSocket, print current positions and deals made this session."""
         print('\nClosing connection.')
+        print('Number of trades: {}\n'.format(len(self.Trades)))
         print(pd.DataFrame(self.Trades).to_string(index=False))
-        self.log_to_file(pd.DataFrame(self.Trades).to_string(index=False))
+        self.log_to_file('\n'+pd.DataFrame(self.Trades).to_string(index=False))
         self.value_positions()
-        print('Number of trades: {}'.format(len(self.Trades)))
-        self.log_to_file(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time())))
+        self.log_to_file('Finished at: {}'.format(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))))
         self.WebsocketClient.stop()
 
     def init_candles(self, symbol: str, interval: str, lookback: int) -> list[dict]:
