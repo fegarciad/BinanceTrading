@@ -2,11 +2,11 @@
 # Trading Strategies #
 ######################
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-
 import numpy as np
 import pandas as pd
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from Models.Utils import ema, macd, rsi, sma
 
