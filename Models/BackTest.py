@@ -3,7 +3,6 @@
 ##################
 
 import sys
-
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -13,7 +12,7 @@ from Models.Strategies import TradingStrategy
 from Models.TradingBot import TradingBot
 
 
-class Backtest():
+class Backtest:
     
     def __init__(self, exchange: Exchange, tradingbot: TradingBot, strategy: TradingStrategy, periods: int) -> None:
         self.exchange = exchange

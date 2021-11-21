@@ -7,18 +7,20 @@ IF USING WEBSOCKETS ON WINDOWS FOLLOW INSTRUCTIONS BELOW
 https://dev.binance.vision/t/cant-run-any-websocket-example-on-binance-connector-python-on-windows/4957/2
 """
 
-from config import API_KEY, API_SECRET
+import os
 
 from Models.Backtest import Backtest
-from Models.CommandLine import CommandLine
+from Models.CommandLine import read_backtest_args
 from Models.Exchange import Exchange
 from Models.Strategies import MACDStrategy, RandomStrategy, TMAStrategy
 from Models.TradingBot import TradingBot
 
+API = os.environ.get('BINANCE_API')
+SECRET = os.environ.get('BINANCE_SECRET')
 
 def main(coin: str, order_size: float, interval: str, backtest_period: int) -> None:
-    """Main backtest function."""
-    exchange = Exchange(API_KEY,API_SECRET)
+    
+    exchange = Exchange(API,SECRET)
     
     paper_cash = 500
     paper_coin = 0.01
@@ -32,6 +34,5 @@ def main(coin: str, order_size: float, interval: str, backtest_period: int) -> N
 
 
 if __name__ == '__main__':
-    commandline = CommandLine()
-    args = commandline.read_backtest_args()
+    args = read_backtest_args()
     main(args['Coin'],args['Ordersize'],args['Interval'],args['Backtest period'])
