@@ -53,9 +53,10 @@ class TradingBot:
             if changed:
                 self.CandleDF = self.exchange.candlelist_to_df(self.CandleList)
                 self.account.log_to_file('\n'+self.CandleDF.to_string(index=False))
-                exit = self.account.check_profit_loss(self.symbol,self.profit,self.loss)
+                exit, signal = self.account.check_profit_loss(self.symbol,self.profit,self.loss)
                 if exit:
-                    self.exchange.exit_positions()
+                    if signal == 'Loss':
+                        self.exchange.exit_positions()
                     self.exchange.close_connection(self.symbol)
                 _ = self.exec_strategy(self.CandleDF)
         except KeyError:

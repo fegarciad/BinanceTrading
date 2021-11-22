@@ -1,6 +1,6 @@
-###############################
-# Main Binance Trading Script #
-###############################
+#######################
+# Main Trading Script #
+#######################
 
 """
 IF USING WEBSOCKETS ON WINDOWS FOLLOW INSTRUCTIONS BELOW

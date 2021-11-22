@@ -3,10 +3,12 @@
 ##################
 
 import sys
+import time
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from Models.Account import Account
 from Models.Exchange import Exchange
 from Models.Strategies import TradingStrategy
 from Models.TradingBot import TradingBot
@@ -14,7 +16,8 @@ from Models.TradingBot import TradingBot
 
 class Backtest:
     
-    def __init__(self, exchange: Exchange, tradingbot: TradingBot, strategy: TradingStrategy, periods: int) -> None:
+    def __init__(self, account: Account, exchange: Exchange, tradingbot: TradingBot, strategy: TradingStrategy, periods: int) -> None:
+        self.account = account
         self.exchange = exchange
         self.strategy = strategy
         self.tradingbot = tradingbot
@@ -34,45 +37,50 @@ class Backtest:
         data = self.exchange.candlelist_to_df(data_list)
         return data
 
-    def run_backtest(self) -> int:
+    def run_backtest(self, log_candles: bool = False) -> int:
         """Execute backtest on strategy."""
-        self.exchange.log_to_file('############\n# BACKTEST #\n############\n',init=True)
+        self.account.log_to_file('############\n# BACKTEST #\n############',init=True)
+        msg = '\nRunning Backest on {}, {} Data Points'.format(str(self.strategy),self.backtest_periods)
+        print(msg)
+        self.account.log_to_file(msg)
+        self.account.log_to_file('\nStarted at: {}'.format(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))))
+        self.account.log_to_file('\nSymbol: {}\nInterval: {}\nOrdersize: {}\nDuration: {}'.format(self.tradingbot.symbol,self.tradingbot.interval,self.tradingbot.order_size,self.tradingbot.duration))
+        self.account.log_to_file('\nTake profit: {}%\nStop Loss: {}%'.format(self.tradingbot.profit,self.tradingbot.loss))
         data = self.get_hist_data()
-        print('\nRunning Backest on {}, {} Data Points'.format(str(self.strategy),self.backtest_periods))
         self.init_wealth = self.value_portfolio(data.iloc[0]['Open price'])
-        self.exchange.log_to_file('Init\n' + data.iloc[:self.strategy.get_lookback()].to_string(index=False))
 
         for i in range(self.strategy.get_lookback() + 1,data.shape[0]):
             live_data = data.iloc[:i]
-            self.exchange.log_to_file(live_data.to_string(index=False))
+            if log_candles:
+                self.account.log_to_file('\n' + live_data.to_string(index=False))
             sig = self.tradingbot.exec_strategy(live_data)
             if sig:
-                self.exchange.Trades[-1]['Time'] = live_data.iloc[-1]['Close time']
+                self.account.trades[-1]['Time'] = live_data.iloc[-1]['Close time']
         
-        msg = '\nNumber of trades: {}'.format(len(self.exchange.Trades))
+        msg = '\nNumber of trades: {}'.format(len(self.account.trades))
         print(msg)
-        self.exchange.log_to_file(msg)
-        print(pd.DataFrame(self.exchange.Trades))
-        self.exchange.log_to_file(pd.DataFrame(self.exchange.Trades).to_string(index=False))
+        self.account.log_to_file(msg)
+        print(pd.DataFrame(self.account.trades))
+        self.account.log_to_file(pd.DataFrame(self.account.trades).to_string(index=False))
         self.final_wealth = self.value_portfolio(data.iloc[-1]['Close price'])
         self.BacktestDF = self.backtest_dataframe(live_data)
-        print('Return of {}: ${:.2f} ({:.2f}%)'.format(str(self.strategy),self.final_wealth-self.init_wealth,(self.final_wealth/self.init_wealth - 1)*100))
+        self.account.value_positions(self.tradingbot.symbol)
+        msg = '\nReturn of {}: {:.2f} ({:.2f}%)'.format(str(self.strategy),self.final_wealth-self.init_wealth,(self.final_wealth/self.init_wealth - 1)*100)
+        print(msg)
+        self.account.log_to_file(msg)
         return self.final_wealth - self.init_wealth
 
     def value_portfolio(self, price: float) -> float:
         """Value current portfolio."""
-        cash = self.exchange.CashPosition
-        coin = self.exchange.Position
-        commissions = self.exchange.Commissions
+        cash = self.account.cash_position
+        coin = self.account.position
+        commissions = self.account.commissions
         wealth = cash + coin*price - commissions
-        msg = '\n{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.2f}\nTotal: {:.2f}\n'.format(self.exchange.Symbol,coin,cash,commissions,wealth)
-        print(msg)
-        self.exchange.log_to_file(msg)
         return wealth
 
     def backtest_dataframe(self,data: pd.DataFrame) -> pd.DataFrame:
         """Create dataframe with price and trade data from backtest."""
-        TradeDF = pd.DataFrame(self.exchange.Trades)
+        TradeDF = pd.DataFrame(self.account.trades)
         TradeDF.rename(columns={'Time':'Close time'},inplace=True)
         BacktestDF = pd.merge(data,TradeDF[['Side','Close time']],on='Close time',how='left')
         BacktestDF['BUY'] = BacktestDF.loc[BacktestDF['Side'] == 'BUY','Close price']

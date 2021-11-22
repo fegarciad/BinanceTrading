@@ -52,6 +52,7 @@ class Exchange:
             raise ClientError('','','Not enough funds.','')
     
     def exit_positions(self) -> None:
+        """Exit positions when returns hit stop loss."""
         pass
 
     def connect_ws(self, handler: callable, symbol: str, interval: str, duration: int) -> None:
@@ -77,7 +78,7 @@ class Exchange:
         print(pd.DataFrame(self.Account.trades).to_string(index=False))
         self.Account.log_to_file('\nNumber of trades: {}\n{}'.format(len(self.Account.trades),pd.DataFrame(self.Account.trades).to_string(index=False)))
         self.Account.value_positions(symbol)
-        msg = '\nProfit: {:.2f}'.format(self.Account.wealth - self.Account.init_wealth)
+        msg = '\nReturn: {:.2f}'.format(self.Account.wealth - self.Account.init_wealth)
         print(msg+'\n')
         self.Account.log_to_file('{}\n\nFinished at: {}'.format(msg,time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))))
         self.WebsocketClient.stop()

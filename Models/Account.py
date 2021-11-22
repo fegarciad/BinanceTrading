@@ -84,7 +84,7 @@ class Account:
             print(msg)
             self.log_to_file(msg)
     
-    def check_profit_loss(self, symbol: str, profit: float, loss: float) -> bool:
+    def check_profit_loss(self, symbol: str, profit: float, loss: float) -> tuple[bool,str]:
         """Check profit and loss targets, exit program if they are met."""
         self.value_positions(symbol,verbose=False)
         current_return = (self.wealth/self.init_wealth - 1) * 100
@@ -92,9 +92,10 @@ class Account:
             msg = '\nProfit target met {}%, exiting program.'.format(current_return)
             print(msg)
             self.log_to_file(msg)
-            return True
+            return True, 'Profit'
         if current_return < loss:
             msg = '\nStop loss met {}%, exiting program.'.format(current_return)
             print(msg)
             self.log_to_file(msg)
-            return True
+            return True, 'Loss'
+        return False, ''
