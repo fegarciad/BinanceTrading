@@ -2,160 +2,57 @@
 # Exchange Class #
 ##################
 
-import os
 import time
-
 import matplotlib.pyplot as plt
 import pandas as pd
-from binance.error import ClientError
-from binance.spot import Spot
-from binance.websocket.spot.websocket_client import SpotWebsocketClient
 from matplotlib.animation import FuncAnimation
 
+from binance.error import ClientError
+from binance.websocket.spot.websocket_client import SpotWebsocketClient
 
-class Exchange():
+from Models.Account import Account
+from Models.Orders import MarketOrder, PaperOrder
 
-    def __init__(self, api: str, secret: str, paper_portfolio: list[float,float] = [0.1,1000], commission: float = 0.00075, logging: bool = True) -> None:
-        self.apiurl = 'https://api.binance.com'
-        self.wsurl = 'wss://stream.binance.com:9443/ws'
+
+class Exchange:
+
+    def __init__(self, account: Account, commission: float = 0.00075, wsurl: str = 'wss://stream.binance.com:9443/ws') -> None:
+        
+        self.Account = account
+        self.WebsocketClient = SpotWebsocketClient(stream_url=wsurl)
         self.commission = commission
 
-        self.Client = Spot(key=api, secret=secret, base_url=self.apiurl)
-        self.WebsocketClient = SpotWebsocketClient(stream_url=self.wsurl)
-        
-        self.log_file = os.path.join(os.getcwd(),'log_file.txt')
-        self.logging = logging
-        self.log_to_file('Started at: {}'.format(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))),init=True)
-
-        self.Symbol = ''
-        self.Trades = []
-        self.Position = 0
-        self.CashPosition = 0
-        self.Commissions = 0
-        self.PaperPortfolio = paper_portfolio
-
-    def log_to_file(self, msg: str, init: bool = False) -> None:
-        """Log messages to log file for later inspection."""
-        if self.logging:
-            if init:
-                with open(self.log_file,'w') as f:
-                    f.write(msg)
-            else:
-                with open(self.log_file,'a+') as f:
-                    f.write('\n'+msg)
-
-    def init_portfolio(self, coin: str, paper_trade: bool) -> None:
-        """Initialize local portfolio to track orders and current positions."""
-        self.Symbol = coin + 'USDT'
-        if paper_trade:
-            self.Position = self.PaperPortfolio[0]
-            self.CashPosition = self.PaperPortfolio[1]
-        else:
-            self.Position = self.get_coin_balance(coin)
-            self.CashPosition = self.get_coin_balance('USDT')
-
-    def set_paper_portfolio(self, coin_balance: float = 0, cash: float = 0, use_real_balance: bool = False, coin: str = '') -> None:
-        """Set paper portfolio values after initializing exchange class."""
-        if use_real_balance:
-            self.PaperPortfolio[0] = self.get_coin_balance(coin)
-            self.PaperPortfolio[1] = self.get_coin_balance('USDT')
-        else:
-            self.PaperPortfolio[0] = coin_balance
-            self.PaperPortfolio[1] = cash
-
-    def account_balance(self) -> pd.DataFrame:
-        """Get current account balances from binance."""
-        acc_df = pd.DataFrame(self.Client.account()['balances'])
-        acc_df[['free','locked']] = acc_df[['free','locked']].astype(float)
-        acc_df.columns = ['Asset','Free','Locked']
-        acc_df = acc_df.loc[(acc_df['Free'] != 0.0)|(acc_df['Locked'] != 0.0)].reset_index()
-        return acc_df[['Asset','Free','Locked']]
-
-    def get_coin_balance(self,coin: str) -> float:
-        """Get balance of specific coin."""
-        acc_df = self.account_balance()
-        return float(acc_df.loc[acc_df['Asset'] == coin,'Free'])
-
-    def refresh_positions(self, side: str, price: float, ammount: float) -> None:
-        """Given an order, modify positions accordingly."""
-        if side == 'BUY':
-            self.Position += ammount
-            self.CashPosition -= ammount*price
-            self.Commissions += ammount*price*self.commission
-        if side == 'SELL':
-            self.Position -= ammount
-            self.CashPosition += ammount*price
-            self.Commissions += ammount*price*self.commission
-
-    def value_positions(self,init=False,verb=True) -> None:
-        """Value current positions."""
-        price = float(self.Client.ticker_price(self.Symbol)['price'])
-        self.Wealth = self.CashPosition+price*self.Position-self.Commissions
-        if init:
-            self.init_Wealth = self.Wealth
-        msg = '\n{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.2f}\nTotal: {:.2f}\n'.format(self.Symbol,self.Position,self.CashPosition,self.Commissions,self.Wealth)
-        if verb:
-            print(msg)
-            self.log_to_file(msg)
-
-    def check_profit_loss(self,profit,loss) -> None:
-        """Check profit and loss targets, exit program if they are met."""
-        self.value_positions(verb=False)
-        current_return = (self.Wealth/self.init_Wealth - 1)*100
-        if current_return > profit:
-            msg = 'Profit target met {}%, exiting program.'.format(current_return)
-            print(msg)
-            self.log_to_file('\n{}\n'.format(msg))
-            self.close_connection()
-        if current_return < loss:
-            msg = 'Stop loss met {}%, exiting program.'.format(current_return)
-            print(msg)
-            self.log_to_file('\n{}\n'.format(msg))
-            self.close_connection()
-
-    def market_order(self, symbol: str, side: str, ammount: float) -> None:
-        """Send market execution order to binance to get filled."""
+    def execute_order(self, symbol: str, side: str, ammount: float, paper_trade: bool) -> None:
+        """Send market execution order to Binance or execute paper trade."""
         params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": ammount}
-        try:
-            order = self.Client.new_order(**params)
-            t = time.strftime('%Y-%m-%d %H:%M', time.localtime(order['transactTime']/1000))
-            price = float(order['cummulativeQuoteQty'])/float(order['executedQty'])
-            op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
-            self.Trades.append(op)
-            self.refresh_positions(side,price,ammount)
-            msg = 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}'.format(side,ammount,symbol,price,price*ammount,t)
-            print(msg)
-            self.log_to_file('\n{}\n'.format(msg))
+        try: 
+            if not paper_trade:
+                confirmation = self.Account.Client.new_order(**params)
+                order = MarketOrder(confirmation,self.commission)
+            else:
+                order = PaperOrder(params,self.commission)
+                order.set_price(float(self.Account.Client.ticker_price(symbol)['price']))
+                self.check_paper_order(order.side,order.price,order.qty)
+            self.Account.trades.append(order.order_dict)
+            self.Account.refresh_positions(order.side,order.price,order.qty,order.commission)
+            print('\n'+str(order))
+            self.Account.log_to_file('\n'+str(order))
         except ClientError as err:
-            msg = '{} order could not be executed. {} {} {}'.format(side,err.error_message,err.status_code,err.error_code)
+            msg = '\n{} order could not be executed. {} {} {}'.format(side,err.error_message,err.status_code,err.error_code)
             print(msg)
-            self.log_to_file('\n{}\n'.format(msg))
+            self.Account.log_to_file(msg)
     
-    def check_paper_order(self, side: str, price: float, ammount: float) -> tuple[bool,str]:
+    def check_paper_order(self, side: str, price: float, ammount: float) -> None:
         """Check if a paper order can be executed based on current cash and coin positions."""
         if price*ammount <= 10: # Minimum order size
-            return False, 'Order to small.'
-        if side == 'BUY': # Check available funds
-            return self.CashPosition > ammount*price, 'Not enough funds.'
-        if side == 'SELL': # Check available crypto currency
-            return self.Position > ammount, 'Not enough funds.'
-
-    def paper_market_order(self, symbol: str, side: str, ammount: float) -> None:
-        """Execute paper order that is stored and handled localy."""
-        t = time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))
-        price = float(self.Client.ticker_price(symbol)['price'])
-        op = {'Symbol':symbol, 'Side':side, 'Price':price, 'Ammount':ammount, 'Time':t}
-        check = self.check_paper_order(side,price,ammount)
-        if not check[0]:
-            msg = '{} order could not be executed. {}'.format(side,check[1])
-            print(msg)
-            self.log_to_file('\n{}\n'.format(msg))
-        else:
-            self.Trades.append(op)
-            self.refresh_positions(side,price,ammount)
-            msg = 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}'.format(side,ammount,symbol,price,price*ammount,t)
-            print(msg)
-            self.log_to_file('\n{}\n'.format(msg))
+            raise ClientError('','','Order to small.','')
+        if side == 'BUY' and self.Account.cash_position < ammount*price: # Check available funds
+            raise ClientError('','','Not enough funds.','')
+        if side == 'SELL' and self.Account.position < ammount: # Check available crypto currency
+            raise ClientError('','','Not enough funds.','')
+    
+    def exit_positions(self) -> None:
+        pass
 
     def connect_ws(self, handler: callable, symbol: str, interval: str, duration: int) -> None:
         """Connect to WebSocket."""
@@ -169,22 +66,25 @@ class Exchange():
             time.sleep(duration)
         except KeyboardInterrupt:
             print('\nKeyboardInterrupt')
+            self.Account.log_to_file('\nKeyboardInterrupt')
         finally:
-            self.close_connection()
+            self.close_connection(symbol)
 
-    def close_connection(self) -> None:
+    def close_connection(self, symbol: str) -> None:
         """Close connection to WebSocket, print current positions and deals made this session."""
         print('\nClosing connection.')
-        print('Number of trades: {}\n'.format(len(self.Trades)))
-        print(pd.DataFrame(self.Trades).to_string(index=False))
-        self.log_to_file('\n'+pd.DataFrame(self.Trades).to_string(index=False))
-        self.value_positions()
-        self.log_to_file('Finished at: {}'.format(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))))
+        print('\nNumber of trades: {}'.format(len(self.Account.trades)))
+        print(pd.DataFrame(self.Account.trades).to_string(index=False))
+        self.Account.log_to_file('\nNumber of trades: {}\n{}'.format(len(self.Account.trades),pd.DataFrame(self.Account.trades).to_string(index=False)))
+        self.Account.value_positions(symbol)
+        msg = '\nProfit: {:.2f}'.format(self.Account.wealth - self.Account.init_wealth)
+        print(msg+'\n')
+        self.Account.log_to_file('{}\n\nFinished at: {}'.format(msg,time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))))
         self.WebsocketClient.stop()
 
     def init_candles(self, symbol: str, interval: str, lookback: int) -> list[dict]:
         """Get historic data for strategies that need to look back to function."""
-        kline_data = self.Client.klines(symbol,interval,limit=lookback,endTime=int(time.time()*1000-60000))
+        kline_data = self.Account.Client.klines(symbol,interval,limit=lookback,endTime=int(time.time()*1000-60000))
         return self.candledata_to_list(kline_data,symbol,interval)
 
     def refresh_candles(self, candle: dict, candlelist: list[dict] , maxLen: int = 90000) -> tuple[list[dict],bool]:
@@ -254,7 +154,7 @@ class Exchange():
     def live_chart(self, symbol: str, interval: str, refreshrate: int = 2000) -> None:
         """Plot live chart of selected coin."""
         def animate(i):
-            data = self.candledata_to_df(self.Client.klines(symbol,interval,limit=120),symbol,interval)
+            data = self.candledata_to_df(self.Account.Client.klines(symbol,interval,limit=120),symbol,interval)
             plt.cla()
             plt.plot(data['Close time'],data['Close price'])
             plt.gcf().autofmt_xdate()

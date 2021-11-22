@@ -5,7 +5,6 @@
 import argparse
 import pandas as pd
 
-
 def read_args() -> dict:
     """Read parameters given in command line."""
     ap = argparse.ArgumentParser(description='Binance Trading Bot')
@@ -29,7 +28,7 @@ def read_args() -> dict:
     params = vars(ap.parse_args())
 
     print('Setting params.. -h for help.')
-    print(pd.DataFrame(params,index=[0]).to_string(index=False))
+    print('\n'+pd.DataFrame(params,index=[0]).to_string(index=False))
     
     return params
 
@@ -50,7 +49,7 @@ def read_backtest_args() -> dict:
     params = vars(ap.parse_args())
 
     print('Setting params.. -h for help.')
-    print(pd.DataFrame(params,index=[0]).to_string(index=False))
+    print('\n'+pd.DataFrame(params,index=[0]).to_string(index=False))
     
     return params
         

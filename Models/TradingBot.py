@@ -1,69 +1,75 @@
-######################
-# Traiding Bot Class #
-######################
+#####################
+# Trading Bot Class #
+#####################
 
 import pandas as pd
+from dataclasses import dataclass
 
+from Models.Account import Account
 from Models.Exchange import Exchange
 from Models.Strategies import TradingStrategy
 
 
-class TradingBot():
+@dataclass
+class TradingBot:
 
-    def __init__(self, exchange: Exchange, strategy: TradingStrategy, coin: str, order_size: float, interval: str, duration: int, profit: float, loss: float, paper_trade: bool = True) -> None:
-        self.exchange = exchange
-        self.strategy = strategy
-        self.symbol = coin + 'USDT'
-        self.order_size = order_size
-        self.interval = interval
-        self.duration = duration
-        self.profit_target = profit
-        self.stop_loss = loss
-        self.paper_trade = paper_trade
+    account: Account
+    exchange: Exchange
+    strategy: TradingStrategy
+    coin: str
+    order_size: float
+    interval: str
+    duration: int
+    profit: float
+    loss: float
+    paper_trade: bool = True
+    verbose: bool = False
 
-        self.exec_order = self.exchange.paper_market_order if self.paper_trade else self.exchange.market_order
-
-        self.exchange.init_portfolio(coin,paper_trade)
-
-        self.CandleList = []
-        self.CandleDF = None
-
+    def __post_init__(self) -> None:
+        self.symbol = self.coin + 'USDT'
+        self.CandleList = self.exchange.init_candles(self.symbol,self.interval,self.strategy.get_lookback())
+        self.CandleDF = self.exchange.candlelist_to_df(self.CandleList)
+        
+        self.account.set_positions(self.coin,self.account.paper_position,self.account.paper_cash_position)
+        self.account.value_positions(self.symbol,init=True)
+        
     def print_data(self) -> None:
         """Print live candlestick data to screen."""
-        self.exchange.connect_ws(lambda x: print(x),self.symbol,self.interval,self.duration)
+        self.exchange.connect_ws(lambda msg: print(msg),self.symbol,self.interval,self.duration)
 
     def exec_strategy(self, data: pd.DataFrame) -> str:
         """Check if there is buy/sell signal and execute it."""
         signal = self.strategy.signal(data)
         if signal:
-            self.exec_order(self.symbol,signal,self.order_size)
+            self.exchange.execute_order(self.symbol,signal,self.order_size,self.paper_trade)
         else:
-            msg = 'No order was placed.'
-            print(msg)
-            self.exchange.log_to_file(msg)
+            self.account.log_to_file('\nNo order was placed.')
         return signal
 
     def ws_handler(self, msg: str) -> None:
-        """Function to handle incoming WebSocket candle data and pass it to the strategy."""
+        """Function to handle incoming WebSocket candlestick data and pass it to the strategy."""
         try:
             self.CandleList, changed = self.exchange.refresh_candles(msg,self.CandleList)
             if changed:
                 self.CandleDF = self.exchange.candlelist_to_df(self.CandleList)
-                self.exchange.log_to_file(self.CandleDF.to_string(index=False))
-                self.exchange.check_profit_loss(self.profit_target,self.stop_loss)
-                self.exec_strategy(self.CandleDF)
+                self.account.log_to_file('\n'+self.CandleDF.to_string(index=False))
+                exit = self.account.check_profit_loss(self.symbol,self.profit,self.loss)
+                if exit:
+                    self.exchange.exit_positions()
+                    self.exchange.close_connection(self.symbol)
+                _ = self.exec_strategy(self.CandleDF)
         except KeyError:
             if msg == {'result': None, 'id': 1}:
                 pass
             else:
                 print(msg)
-                self.exchange.close_connection()            
+                self.exchange.close_connection(self.symbol)
 
     def run(self) -> None:
         """Initialize portfolio, connecto to WebSocket and run strategy."""
-        print('\nRunning {}, PaperTrade: {}\n'.format(str(self.strategy),self.paper_trade))
-        self.CandleList = self.exchange.init_candles(self.symbol,self.interval,self.strategy.get_lookback())
-        self.exchange.value_positions(init=True)
-        self.exchange.log_to_file('Symbol: {}\nInterval: {}\nOrdersize: {}\nDuration: {}\nPaperTrade: {}\n\n{}'.format(
-            self.symbol,self.interval,self.order_size,self.duration,self.paper_trade,self.exchange.candlelist_to_df(self.CandleList).to_string(index=False)))
+        msg = '\nRunning {}, PaperTrade: {}'.format(str(self.strategy),self.paper_trade)
+        print(msg)
+        self.account.log_to_file(msg)
+        self.account.log_to_file('\nSymbol: {}\nInterval: {}\nOrdersize: {}\nDuration: {}'.format(self.symbol,self.interval,self.order_size,self.duration))
+        self.account.log_to_file('\nTake profit: {}%\nStop Loss: {}%\n\n{}'.format(self.profit,self.loss,self.exchange.candlelist_to_df(self.CandleList).to_string(index=False)))
         self.exchange.connect_ws(self.ws_handler,self.symbol,self.interval,self.duration)
