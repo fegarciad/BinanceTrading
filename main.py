@@ -35,5 +35,6 @@ def main(coin: str, order_size: float, interval: str, duration: int, profit: flo
 
 if __name__ == '__main__':
     os.system('cls')
+    print(f'Testnet: {testnet}')
     args = read_args()
     main(args['Coin'],args['Ordersize'],args['Interval'],args['Duration'],args['Profit'],args['Loss'],args['Papertrade'])

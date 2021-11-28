@@ -16,18 +16,13 @@ from Models.Exchange import Exchange
 from Models.Strategies import MACDStrategy, RandomStrategy, TMAStrategy
 from Models.TradingBot import TradingBot
 
-testnet = True
-
-API = os.environ.get('BINANCE_API') if not testnet else os.environ.get('TESTNET_API')
-SECRET = os.environ.get('BINANCE_SECRET') if not testnet else os.environ.get('TESTNET_SECRET')
-
-apiurl = 'https://api.binance.com' if not testnet else 'https://testnet.binance.vision'
-wsurl = 'wss://stream.binance.com:9443/ws' if not testnet else 'wss://testnet.binance.vision'
+API = os.environ.get('BINANCE_API')
+SECRET = os.environ.get('BINANCE_SECRET')
 
 def main(coin: str, order_size: float, interval: str, backtest_period: int) -> None:
     
-    account = Account(API,SECRET,True,use_real_balance_as_paper=True,apiurl=apiurl)
-    exchange = Exchange(account,wsurl=wsurl)
+    account = Account(API,SECRET,True,use_real_balance_as_paper=True)
+    exchange = Exchange(account)
     
     strategy = TMAStrategy(period_long=63,period_mid=42,period_short=21)
     tradebot = TradingBot(account,exchange,strategy,coin,order_size,interval,duration=0,profit=0,loss=0,paper_trade=True)
