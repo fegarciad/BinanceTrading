@@ -21,11 +21,11 @@ SECRET = os.environ.get('BINANCE_SECRET')
 
 def main(coin: str, order_size: float, interval: str, backtest_period: int) -> None:
     
-    account = Account(API,SECRET,True,use_real_balance_as_paper=True)
+    account = Account(API,SECRET,paper_trade=True,paper_position=0.01,paper_cash_position=1000)
     exchange = Exchange(account)
     
     strategy = TMAStrategy(period_long=63,period_mid=42,period_short=21)
-    tradebot = TradingBot(account,exchange,strategy,coin,order_size,interval,duration=0,profit=0,loss=0,paper_trade=True)
+    tradebot = TradingBot(account,exchange,strategy,coin,order_size,interval,duration=0,profit=0,loss=0)
     backtest = Backtest(account,exchange,tradebot,strategy,backtest_period)
     backtest.run_backtest()
     backtest.plot_backtest()

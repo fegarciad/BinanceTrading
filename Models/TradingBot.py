@@ -22,7 +22,6 @@ class TradingBot:
     duration: int
     profit: float
     loss: float
-    paper_trade: bool = True
     verbose: bool = False
 
     def __post_init__(self) -> None:
@@ -41,7 +40,7 @@ class TradingBot:
         """Check if there is buy/sell signal and execute it."""
         signal = self.strategy.signal(data)
         if signal:
-            self.exchange.execute_order(self.symbol,signal,self.order_size,self.paper_trade)
+            self.exchange.execute_order(self.symbol,signal,self.order_size,self.account.paper_trade)
         else:
             self.account.log_to_file('\nNo order was placed.')
         return signal
@@ -56,7 +55,7 @@ class TradingBot:
                 exit, signal = self.account.check_profit_loss(self.symbol,self.profit,self.loss)
                 if exit:
                     if signal == 'Loss':
-                        self.exchange.exit_positions(self.symbol,self.paper_trade)
+                        self.exchange.exit_positions(self.symbol,self.account.paper_trade)
                     self.exchange.event.set() # Terminate trading session
                 else:
                     _ = self.exec_strategy(self.candle_df)
@@ -69,7 +68,7 @@ class TradingBot:
 
     def run(self) -> None:
         """Initialize portfolio, connecto to WebSocket and run strategy."""
-        msg = '\nRunning {}, PaperTrade: {}'.format(str(self.strategy),self.paper_trade)
+        msg = '\nRunning {}'.format(str(self.strategy))
         print(msg)
         self.account.log_to_file(msg)
         self.account.log_to_file('\nSymbol: {}\nInterval: {}\nOrdersize: {}\nDuration: {}'.format(self.symbol,self.interval,self.order_size,self.duration))
