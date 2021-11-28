@@ -88,13 +88,14 @@ class Account:
         """Check profit and loss targets, exit program if they are met."""
         self.value_positions(symbol,verbose=False)
         current_return = (self.wealth/self.init_wealth - 1) * 100
+        print(f'\nCurrent return: {current_return:.4f}%')
         if current_return > profit:
-            msg = '\nProfit target met {}%, exiting program.'.format(current_return)
+            msg = '\nProfit target met at {:.4f}%, exiting program.'.format(current_return)
             print(msg)
             self.log_to_file(msg)
             return True, 'Profit'
         if current_return < loss:
-            msg = '\nStop loss met {}%, exiting program.'.format(current_return)
+            msg = '\nStop loss met at {:.4f}%, exiting program.'.format(current_return)
             print(msg)
             self.log_to_file(msg)
             return True, 'Loss'
