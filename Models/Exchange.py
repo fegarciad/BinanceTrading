@@ -2,10 +2,11 @@
 # Exchange Class #
 ##################
 
-import threading
 import time
-import matplotlib.pyplot as plt
+import threading
+
 import pandas as pd
+import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 from binance.error import ClientError
@@ -175,14 +176,14 @@ class Exchange:
 
 
 class TimedValue:
+
     def __init__(self, duration: int) -> None:
         self.duration = duration
-        self.killed = False
-        self._started_at = time.time()
+        self.started_at = time.time()
 
     @property
     def is_running(self) -> None:
-        time_passed = time.time() - self._started_at
+        time_passed = time.time() - self.started_at
         if time_passed > self.duration:
             return False
         return True
