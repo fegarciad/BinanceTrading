@@ -21,7 +21,7 @@ def read_args() -> dict:
     # Profit target
     ap.add_argument("-t", required=False, metavar='Profit target', dest='Profit', help="Profit target (percent) [float] default: 25",type=float,default=25)
     # Stop loss
-    ap.add_argument("-l", required=False, metavar='Stop loss', dest='Loss', help="Stop loss (percent) [float] default: -5",type=float,default=-5)
+    ap.add_argument("-l", required=False, metavar='Stop loss', dest='Loss', help="Stop loss, negative! (percent) [float] default: -5",type=float,default=-5)
     # Paper trade
     ap.add_argument("-p", required=False, dest='Papertrade', help="Paper Trade, if called paper trading is DISABLED, else its enabled.",action="store_false")
 

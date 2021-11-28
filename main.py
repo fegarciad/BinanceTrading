@@ -28,7 +28,7 @@ def main(coin: str, order_size: float, interval: str, duration: int, profit: flo
     account = Account(API,SECRET,paper_trade,use_real_balance_as_paper=True,apiurl=apiurl)
     exchange = Exchange(account,wsurl=wsurl)
 
-    strategy = RandomStrategy()
+    strategy = RandomStrategy(upper=60,lower=40)
     tradebot = TradingBot(account,exchange,strategy,coin,order_size,interval,duration,profit,loss,paper_trade)
     tradebot.run()
 

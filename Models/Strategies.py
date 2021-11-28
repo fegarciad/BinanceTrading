@@ -149,6 +149,9 @@ class TMAStrategy(TradingStrategy):
 class RandomStrategy(TradingStrategy):
     """Random Strategy: For testing purposes."""
 
+    upper: int = 75
+    lower: int = 25
+
     def get_lookback(self) -> int:
         return 5
 
@@ -157,9 +160,9 @@ class RandomStrategy(TradingStrategy):
     
     def signal(self, data: pd.DataFrame) -> str:
         x = np.random.randint(100)
-        if x < 25:
+        if x < self.lower:
             return 'BUY'
-        elif x > 75:
+        elif x > self.upper:
             return 'SELL'
         else:
             return ''

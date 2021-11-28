@@ -34,7 +34,7 @@ class Backtest:
     def get_hist_data(self) -> pd.DataFrame:
         """Get historic price data to backtest strategies."""
         data_list = self.exchange.init_candles(self.tradingbot.symbol,self.tradingbot.interval,self.backtest_periods)
-        data = self.exchange.candlelist_to_df(data_list)
+        data = self.exchange.candle_list_to_df(data_list)
         return data
 
     def run_backtest(self, log_candles: bool = False) -> int:
@@ -89,7 +89,7 @@ class Backtest:
 
     def plot_backtest(self) -> None:
         """Plot price chart, entry and exit signals."""
-        _, ax = plt.subplots(1,1,figsize=(10,8))
+        _, ax = plt.subplots(1,1,figsize=(12,10))
         ax.plot(self.BacktestDF['Close time'],self.BacktestDF['Close price'],zorder=1)
         ax.scatter(self.BacktestDF['Close time'],self.BacktestDF['BUY'], color='green', label='Buy', marker='^',s=75,zorder=2)
         ax.scatter(self.BacktestDF['Close time'],self.BacktestDF['SELL'], color='red', label='Sell', marker='v',s=75,zorder=2)

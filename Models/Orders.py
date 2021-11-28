@@ -12,7 +12,7 @@ class MarketOrder:
     confirmation: dict[str,str]
     commission: float
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.symbol = self.confirmation['symbol']
         self.side = self.confirmation['side']
         self.qty = float(self.confirmation['executedQty'])
@@ -20,7 +20,7 @@ class MarketOrder:
         self.price = float(self.confirmation['cummulativeQuoteQty'])/float(self.confirmation['executedQty'])
 
     def __str__(self) -> str:
-        return 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}'.format(self.side,self.qty,self.symbol,self.price,self.price*self.qty,self.order_time)
+        return 'Order: {} {:,.4f} {} for ${:,.2f} (${:,.2f} total) at {}'.format(self.side,self.qty,self.symbol,self.price,self.price*self.qty,self.order_time)
     
     @property
     def order_dict(self) -> dict:
@@ -33,7 +33,7 @@ class PaperOrder:
     confirmation: dict[str,str]
     commission: float
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.symbol = self.confirmation['symbol']
         self.side = self.confirmation['side']
         self.qty = self.confirmation['quantity']
@@ -41,7 +41,7 @@ class PaperOrder:
         self.price = None
 
     def __str__(self) -> str:
-        return 'Order: {} {} {} for ${:,.2f} (${:,.2f} total) at {}'.format(self.side,self.qty,self.symbol,self.price,self.price*self.qty,self.order_time)
+        return 'Order: {} {:,.4f} {} for ${:,.2f} (${:,.2f} total) at {}'.format(self.side,self.qty,self.symbol,self.price,self.price*self.qty,self.order_time)
 
     def set_price(self, price: float) -> None:
         self.price = price
