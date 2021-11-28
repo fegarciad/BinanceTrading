@@ -28,8 +28,8 @@ class Account:
         self.wealth = 0
         self.trades = []
 
-        self.logfile = os.path.join(os.getcwd(),'log_file.txt')
-        self.log_to_file('Started at: {}'.format(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))), init=True)
+        self.logfile = os.path.join('Logs','{} logs.txt'.format(time.strftime('%Y-%m-%d %H-%M', time.localtime())))
+        self.log_to_file('Started at: {}'.format(time.strftime('%Y-%m-%d %H:%M', time.localtime())), init=True)
 
     def log_to_file(self, msg: str, init: bool = False) -> None:
         """Log messages to log file for later inspection."""

@@ -37,7 +37,7 @@ class PaperOrder:
         self.symbol = self.confirmation['symbol']
         self.side = self.confirmation['side']
         self.qty = self.confirmation['quantity']
-        self.order_time = time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))
+        self.order_time = time.strftime('%Y-%m-%d %H:%M', time.localtime())
         self.price = None
 
     def __str__(self) -> str:

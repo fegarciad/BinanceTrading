@@ -43,7 +43,7 @@ class Backtest:
         msg = '\nRunning Backest on {}, {} Data Points'.format(str(self.strategy),self.backtest_periods)
         print(msg)
         self.account.log_to_file(msg)
-        self.account.log_to_file('\nStarted at: {}'.format(time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))))
+        self.account.log_to_file('\nStarted at: {}'.format(time.strftime('%Y-%m-%d %H:%M', time.localtime())))
         self.account.log_to_file('\nSymbol: {}\nInterval: {}\nOrdersize: {}\nDuration: {}'.format(self.tradingbot.symbol,self.tradingbot.interval,self.tradingbot.order_size,self.tradingbot.duration))
         self.account.log_to_file('\nTake profit: {}%\nStop Loss: {}%'.format(self.tradingbot.profit,self.tradingbot.loss))
         data = self.get_hist_data()
