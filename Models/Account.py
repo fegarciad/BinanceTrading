@@ -79,7 +79,7 @@ class Account:
         self.wealth = self.cash_position + price * self.position - self.commissions
         if init:
             self.init_wealth = self.wealth
-        msg = '\n{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.2f}\nTotal: {:.2f}'.format(symbol,self.position,self.cash_position,self.commissions,self.wealth)
+        msg = '\n{} position: {:,.4f}\nCash position: {:,.2f}\nCommissions: {:,.2f}\nTotal: {:,.2f}'.format(symbol,self.position,self.cash_position,self.commissions,self.wealth)
         if verbose:
             print(msg)
             self.log_to_file(msg)
