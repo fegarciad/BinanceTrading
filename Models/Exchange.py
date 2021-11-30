@@ -163,13 +163,16 @@ class Exchange:
         candledf['Kline closed?'] = True
         return candledf[['Open time', 'Close time', 'Symbol', 'Interval', 'Open price', 'Close price', 'High price', 'Low price', 'Base asset volume']]
 
-    def live_chart(self, symbol: str, interval: str, refreshrate: int = 2000) -> None:
+    def live_chart(self, coin: str, interval: str, refreshrate: int = 2000) -> None:
         """Plot live chart of selected coin."""
-        def animate():
+        symbol = coin + 'USDT'
+
+        def animate(_):
             data = self.candledata_to_df(self.account.client.klines(symbol, interval, limit=120), symbol, interval)
             plt.cla()
             plt.plot(data['Close time'], data['Close price'])
             plt.gcf().autofmt_xdate()
+            plt.gca().yaxis.set_major_formatter('{x:,.2f}')
             plt.xlabel('Time')
             plt.ylabel('Price')
             plt.title(symbol, y=1.05, fontsize=16)

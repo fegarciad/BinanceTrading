@@ -33,10 +33,6 @@ class TradingBot:
         self.account.set_positions(self.coin, self.account.paper_position, self.account.paper_cash_position)
         self.account.value_positions(self.symbol, init=True)
 
-    def print_data(self) -> None:
-        """Print live candlestick data to screen."""
-        self.exchange.connect_ws(print, self.symbol, self.interval, self.duration)
-
     def exec_strategy(self, data: pd.DataFrame) -> str:
         """Check if there is buy/sell signal and execute it."""
         signal = self.strategy.signal(data)
