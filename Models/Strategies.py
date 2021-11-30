@@ -2,11 +2,11 @@
 # Trading Strategies #
 ######################
 
-import numpy as np
-import pandas as pd
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
 
 from Models.Utils import ema, macd, rsi, sma
 
@@ -17,7 +17,7 @@ class TradingStrategy(ABC):
     @abstractmethod
     def get_lookback(self) -> int:
         """Get minimum number of historic data points required to run strategy."""
-    
+
     @abstractmethod
     def __str__(self) -> str:
         """Returns name of strategy."""
@@ -25,26 +25,26 @@ class TradingStrategy(ABC):
     @abstractmethod
     def signal(self, data: pd.DataFrame) -> str:
         """Returns trading signal (Buy/Sell/Do nothing)."""
-    
+
 
 @dataclass
 class MACDStrategy(TradingStrategy):
     """MACD Strategy: If MACD line crosses signal line, buy or sell."""
-    
+
     period_long: int = 26
-    period_short: int = 12 
+    period_short: int = 12
     period_signal: int = 9
 
     assert period_long > period_short
 
     def get_lookback(self) -> int:
-        return max([self.period_long,self.period_signal]) + 5
+        return max([self.period_long, self.period_signal]) + 5
 
     def __str__(self) -> str:
-        return 'MACD Strategy (long={}, short={}, signal={})'.format(self.period_long,self.period_short,self.period_signal)
+        return f'MACD Strategy (long={self.period_long}, short={self.period_short}, signal={self.period_signal})'
 
     def signal(self, data: pd.DataFrame) -> str:
-        
+
         buy_orders = []
         sell_orders = []
         flag = False
@@ -52,8 +52,8 @@ class MACDStrategy(TradingStrategy):
         date_col = 'Close time'
         price_col = 'Close price'
 
-        prices =  data[[date_col,price_col]].sort_values(by=date_col).reset_index(drop=True)
-        macd_line, signal_line = macd(prices[price_col],period_long=self.period_long,period_short=self.period_short,period_signal=self.period_signal)
+        prices = data[[date_col, price_col]].sort_values(by=date_col).reset_index(drop=True)
+        macd_line, signal_line = macd(prices[price_col], period_long=self.period_long, period_short=self.period_short, period_signal=self.period_signal)
         prices['MACD'] = macd_line
         prices['Signal'] = signal_line
 
@@ -75,12 +75,12 @@ class MACDStrategy(TradingStrategy):
             else:
                 buy_orders.append('')
                 sell_orders.append('')
-        
+
         if (buy_orders[-1] and sell_orders[-1]) or (not buy_orders[-1] and not sell_orders[-1]):
             order = ''
         else:
             order = buy_orders[-1] if buy_orders[-1] else sell_orders[-1]
-        
+
         return order
 
 
@@ -98,40 +98,40 @@ class TMAStrategy(TradingStrategy):
         return self.period_long + 5
 
     def __str__(self) -> str:
-        return 'Three Moving Average Strategy (long={}, mid={}, short={})'.format(self.period_long,self.period_mid,self.period_short)
+        return f'Three Moving Average Strategy (long={self.period_long}, mid={self.period_mid}, short={self.period_short})'
 
     def signal(self, data: pd.DataFrame) -> str:
-        
+
         buy_orders = []
         sell_orders = []
-        shortFlag = False
-        longFlag = False
+        short_flag = False
+        long_flag = False
 
         date_col = 'Close time'
         price_col = 'Close price'
 
-        prices =  data[[date_col,price_col]].sort_values(by=date_col).reset_index(drop=True)
-        long_ma, mid_ma, short_ma = ema(prices[price_col],self.period_long), ema(prices[price_col],self.period_mid), ema(prices[price_col],self.period_short)
+        prices = data[[date_col, price_col]].sort_values(by=date_col).reset_index(drop=True)
+        long_ma, mid_ma, short_ma = ema(prices[price_col], self.period_long), ema(prices[price_col], self.period_mid), ema(prices[price_col], self.period_short)
         prices['Long'], prices['Middle'], prices['Short'] = long_ma, mid_ma, short_ma
 
         for _, row in prices.iterrows():
-            if row['Middle'] < row['Long'] and row['Short'] < row['Middle'] and not longFlag and not shortFlag:
+            if row['Middle'] < row['Long'] and row['Short'] < row['Middle'] and not long_flag and not short_flag:
                 sell_orders.append('')
                 buy_orders.append('BUY')
-                shortFlag = True
-            elif row['Short'] > row['Middle'] and shortFlag:
+                short_flag = True
+            elif row['Short'] > row['Middle'] and short_flag:
                 sell_orders.append('SELL')
                 buy_orders.append('')
-                shortFlag = False
-            
-            elif row['Middle'] > row['Long'] and row['Short'] > row['Middle'] and not longFlag and not shortFlag:
+                short_flag = False
+
+            elif row['Middle'] > row['Long'] and row['Short'] > row['Middle'] and not long_flag and not short_flag:
                 sell_orders.append('')
                 buy_orders.append('BUY')
-                longFlag = True
-            elif row['Short'] < row['Middle'] and longFlag:
+                long_flag = True
+            elif row['Short'] < row['Middle'] and long_flag:
                 sell_orders.append('SELL')
                 buy_orders.append('')
-                longFlag = False
+                long_flag = False
 
             else:
                 buy_orders.append('')
@@ -141,7 +141,7 @@ class TMAStrategy(TradingStrategy):
             order = ''
         else:
             order = buy_orders[-1] if buy_orders[-1] else sell_orders[-1]
-        
+
         return order
 
 
@@ -157,13 +157,12 @@ class RandomStrategy(TradingStrategy):
 
     def __str__(self) -> str:
         return 'Random Strategy'
-    
+
     def signal(self, data: pd.DataFrame) -> str:
-        x = np.random.randint(100)
-        if x < self.lower:
+        signal = np.random.randint(100)
+        if signal < self.lower:
             return 'BUY'
-        elif x > self.upper:
+        elif signal > self.upper:
             return 'SELL'
         else:
             return ''
-
