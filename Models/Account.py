@@ -1,6 +1,5 @@
-"""
-Account Class
-"""
+
+"""Account Class"""
 
 import os
 import time
@@ -32,7 +31,8 @@ class Account:
         self.position: float = 0.0
         self.cash_position: float = 0.0
 
-        self.logfile = os.path.join(os.getcwd(), 'Logs', f'{time.strftime("%Y-%m-%d %H-%M", time.localtime())} logs.txt')
+        self.logfile = os.path.join(
+            os.getcwd(), 'Logs', f'{time.strftime("%Y-%m-%d %H-%M", time.localtime())} logs.txt')
         self.log_to_file(f'Started at: {time.strftime("%Y-%m-%d %H-%M", time.localtime())}', init=True)
 
     def log_to_file(self, msg: str, init: bool = False) -> None:

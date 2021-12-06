@@ -1,6 +1,5 @@
-"""
-Trading Strategies
-"""
+
+"""Trading Strategies"""
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass

@@ -1,6 +1,5 @@
-"""
-Exchange Class
-"""
+
+"""Exchange Class"""
 
 import time
 import threading
@@ -116,19 +115,26 @@ class Exchange:
 
     def candle_list_to_df(self, candle_list: list[dict]) -> pd.DataFrame:
         """Convert list of candlesticks from WebSocket to DataFrame."""
-        headers = ['Open time', 'Close time', 'Symbol', 'Interval', 'First trade ID', 'Last trade ID', 'Open price', 'Close price', 'High price', 'Low price', 'Base asset volume', 'Number of trades', 'Kline closed?', 'Quote asset volume', 'Taker buy base asset volume', 'Taker buy quote asset volume', 'Ignore']
+        headers = [
+            'Open time', 'Close time', 'Symbol', 'Interval', 'First trade ID', 'Last trade ID',
+            'Open price', 'Close price', 'High price', 'Low price', 'Base asset volume',
+            'Number of trades', 'Kline closed?', 'Quote asset volume', 'Taker buy base asset volume',
+            'Taker buy quote asset volume', 'Ignore']
         candle_df = pd.DataFrame(candle_list, index=[i for i, _ in enumerate(candle_list)])
         candle_df.set_axis(headers, axis=1, inplace=True)
         candle_df['Open time'] = pd.to_datetime(candle_df['Open time'], unit='ms')
         candle_df['Close time'] = pd.to_datetime(candle_df['Close time'], unit='ms')
-        candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']] = candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']].astype('float')
-        return candle_df[['Open time', 'Close time', 'Symbol', 'Interval', 'Open price', 'Close price', 'High price', 'Low price', 'Base asset volume', 'Number of trades', 'Kline closed?']]
+        candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']]\
+             = candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']].astype('float')
+        return candle_df[[
+            'Open time', 'Close time', 'Symbol', 'Interval', 'Open price', 'Close price',
+            'High price', 'Low price', 'Base asset volume', 'Number of trades']]
 
     def candledata_to_list(self, candledata: list[list], symbol: str, interval: str) -> list[dict]:
         """Convert candlesticks historic table to candlestick list of dictionaries."""
         candlelist = []
         for candle in candledata:
-            candle_dict = {'k': {
+            candle_dict = {
                 "t": candle[0],   # Kline start time
                 "T": candle[6],   # Kline close time
                 "s": symbol,      # Symbol
@@ -146,22 +152,29 @@ class Exchange:
                 "V": candle[9],   # Taker buy base asset volume
                 "Q": candle[10],  # Taker buy quote asset volume
                 "B": candle[11]   # Ignore
-            }}
-            candlelist.append(candle_dict['k'])
+            }
+            candlelist.append(candle_dict)
         return candlelist
 
     def candledata_to_df(self, candledata: list[list], symbol: str, interval: str) -> pd.DataFrame:
         """Convert candlesticks historic table to DataFrame."""
-        headers = ['Open time', 'Open price', 'High price', 'Low price', 'Close price', 'Base asset volume', 'Close time', 'Quote asset volume', 'Number of trades', 'Taker buy base asset volume', 'Taker buy quote asset volume', 'Ignore']
-        candledf = pd.DataFrame(candledata)
-        candledf.set_axis(headers, axis=1, inplace=True)
-        candledf['Open time'] = pd.to_datetime(candledf['Open time'], unit='ms')
-        candledf['Close time'] = pd.to_datetime(candledf['Close time'], unit='ms')
-        candledf[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']] = candledf[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']].astype('float')
-        candledf['Symbol'] = symbol
-        candledf['Interval'] = interval
-        candledf['Kline closed?'] = True
-        return candledf[['Open time', 'Close time', 'Symbol', 'Interval', 'Open price', 'Close price', 'High price', 'Low price', 'Base asset volume']]
+        headers = [
+            'Open time', 'Open price', 'High price', 'Low price',
+            'Close price', 'Base asset volume', 'Close time', 'Quote asset volume',
+            'Number of trades', 'Taker buy base asset volume',
+            'Taker buy quote asset volume', 'Ignore']
+        candle_df = pd.DataFrame(candledata)
+        candle_df.set_axis(headers, axis=1, inplace=True)
+        candle_df['Open time'] = pd.to_datetime(candle_df['Open time'], unit='ms')
+        candle_df['Close time'] = pd.to_datetime(candle_df['Close time'], unit='ms')
+        candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']]\
+             = candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']].astype('float')
+        candle_df['Symbol'] = symbol
+        candle_df['Interval'] = interval
+        candle_df['Kline closed?'] = True
+        return candle_df[[
+            'Open time', 'Close time', 'Symbol', 'Interval', 'Open price', 'Close price',
+            'High price', 'Low price', 'Base asset volume', 'Number of trades']]
 
     def live_chart(self, coin: str, interval: str, refreshrate: int = 2000) -> None:
         """Plot live chart of selected coin."""

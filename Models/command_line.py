@@ -1,6 +1,5 @@
-"""
-Interpret Command Line Arguments
-"""
+
+"""Interpret Command Line Arguments"""
 
 import argparse
 import pandas as pd
@@ -45,8 +44,8 @@ def read_backtest_args() -> dict:
     arg_parser.add_argument("-i", required=False, dest='Interval', help="Interval [str] default: 1m", type=str, choices=intervals, default='1m')
     # Order size
     arg_parser.add_argument("-o", required=False, metavar='Ordersize', dest='Ordersize', help="Order size [float] default: 0.0005", type=float, default=0.0005)
-    # Backtest period
-    arg_parser.add_argument("-b", required=False, metavar='Backtest period', dest='Backtest period', help="Number of data points for backtest [int] default: 500", type=int, default=500)
+    # Backtest window
+    arg_parser.add_argument("-b", required=False, metavar='Backtest window', dest='Backtest window', help="Backtest window [int] default: 500", type=int, default=500)
 
     params = vars(arg_parser.parse_args())
 

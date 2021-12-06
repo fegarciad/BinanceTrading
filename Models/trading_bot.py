@@ -1,6 +1,5 @@
-"""
-Trading Bot Class
-"""
+
+"""Trading Bot Class"""
 
 from dataclasses import dataclass
 

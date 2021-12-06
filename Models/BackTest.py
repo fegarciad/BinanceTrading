@@ -1,6 +1,5 @@
-"""
-Backtest Class
-"""
+
+"""Backtest Class"""
 
 import sys
 import time
