@@ -1,18 +1,19 @@
-#####################
-# Trading Bot Class #
-#####################
+"""
+Trading Bot Class
+"""
 
 from dataclasses import dataclass
 
 import pandas as pd
 
-from Models.Account import Account
-from Models.Exchange import Exchange
-from Models.Strategies import TradingStrategy
+from Models.account import Account
+from Models.exchange import Exchange
+from Models.strategies import TradingStrategy
 
 
 @dataclass
 class TradingBot:
+    """Trading bot class."""
 
     account: Account
     exchange: Exchange

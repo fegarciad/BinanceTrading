@@ -1,6 +1,6 @@
-####################################
-# Interpret Command Line Arguments #
-####################################
+"""
+Interpret Command Line Arguments
+"""
 
 import argparse
 import pandas as pd

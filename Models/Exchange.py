@@ -1,6 +1,6 @@
-##################
-# Exchange Class #
-##################
+"""
+Exchange Class
+"""
 
 import time
 import threading
@@ -13,14 +13,14 @@ from matplotlib.animation import FuncAnimation
 from binance.error import ClientError
 from binance.websocket.spot.websocket_client import SpotWebsocketClient
 
-from Models.Account import Account
-from Models.Orders import MarketOrder, PaperOrder
+from Models.account import Account
+from Models.orders import MarketOrder, PaperOrder
 
 
 class Exchange:
+    """Exchange class."""
 
     def __init__(self, account: Account, commission: float = 0.00075, wsurl: str = 'wss://stream.binance.com:9443/ws') -> None:
-
         self.account = account
         self.websocketclient = SpotWebsocketClient(stream_url=wsurl)
         self.commission = commission
@@ -181,6 +181,7 @@ class Exchange:
 
 
 class TimedValue:
+    """Timed value class."""
 
     def __init__(self, duration: int) -> None:
         self.duration = duration
@@ -188,6 +189,7 @@ class TimedValue:
 
     @property
     def is_running(self) -> bool:
+        """Check if instance has expired."""
         time_passed = time.time() - self.started_at
         if time_passed > self.duration:
             return False

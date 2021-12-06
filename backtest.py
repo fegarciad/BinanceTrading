@@ -9,18 +9,19 @@ https://dev.binance.vision/t/cant-run-any-websocket-example-on-binance-connector
 
 import os
 
-from Models.Account import Account
-from Models.Backtest import Backtest
-from Models.CommandLine import read_backtest_args
-from Models.Exchange import Exchange
-from Models.Strategies import MACDStrategy, RandomStrategy, TMAStrategy
-from Models.TradingBot import TradingBot
+from Models.account import Account
+from Models.backtest import Backtest
+from Models.command_line import read_backtest_args
+from Models.exchange import Exchange
+from Models.strategies import MACDStrategy, RandomStrategy, TMAStrategy
+from Models.trading_bot import TradingBot
 
 API = os.environ.get('BINANCE_API')
 SECRET = os.environ.get('BINANCE_SECRET')
 
 
 def main(coin: str, order_size: float, interval: str, backtest_period: int) -> None:
+    """Main backtest function."""
 
     account = Account(API, SECRET, paper_trade=True, paper_position=0.01, paper_cash_position=1000)
     exchange = Exchange(account)

@@ -1,6 +1,6 @@
-##################
-# Backtest Class #
-##################
+"""
+Backtest Class
+"""
 
 import sys
 import time
@@ -8,13 +8,14 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from Models.Account import Account
-from Models.Exchange import Exchange
-from Models.Strategies import TradingStrategy
-from Models.TradingBot import TradingBot
+from Models.account import Account
+from Models.exchange import Exchange
+from Models.strategies import TradingStrategy
+from Models.trading_bot import TradingBot
 
 
 class Backtest:
+    """Backtest class."""
 
     def __init__(self, account: Account, exchange: Exchange, tradingbot: TradingBot, strategy: TradingStrategy, periods: int) -> None:
         self.account = account

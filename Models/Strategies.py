@@ -1,6 +1,6 @@
-######################
-# Trading Strategies #
-######################
+"""
+Trading Strategies
+"""
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from Models.Utils import ema, macd, rsi, sma
+from Models.utils import ema, macd, rsi, sma
 
 
 class TradingStrategy(ABC):
@@ -156,7 +156,7 @@ class RandomStrategy(TradingStrategy):
         return 5
 
     def __str__(self) -> str:
-        return 'Random Strategy'
+        return f'Random Strategy (upper={self.upper}, lower={self.lower})'
 
     def signal(self, data: pd.DataFrame) -> str:
         signal = np.random.randint(100)

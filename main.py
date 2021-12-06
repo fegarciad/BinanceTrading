@@ -9,11 +9,11 @@ https://dev.binance.vision/t/cant-run-any-websocket-example-on-binance-connector
 
 import os
 
-from Models.Account import Account
-from Models.CommandLine import read_args
-from Models.Exchange import Exchange
-from Models.Strategies import MACDStrategy, RandomStrategy, TMAStrategy
-from Models.TradingBot import TradingBot
+from Models.account import Account
+from Models.command_line import read_args
+from Models.exchange import Exchange
+from Models.strategies import MACDStrategy, RandomStrategy, TMAStrategy
+from Models.trading_bot import TradingBot
 
 TESTNET = True
 
@@ -25,6 +25,7 @@ WSURL = 'wss://stream.binance.com:9443/ws' if not TESTNET else 'wss://testnet.bi
 
 
 def main(coin: str, order_size: float, interval: str, duration: int, profit: float, loss: float, paper_trade: bool) -> None:
+    """Main trading function."""
 
     account = Account(API, SECRET, paper_trade, use_real_balance_as_paper=True, apiurl=APIURL)
     exchange = Exchange(account, wsurl=WSURL)
