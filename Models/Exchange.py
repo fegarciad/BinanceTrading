@@ -125,7 +125,7 @@ class Exchange:
         candle_df['Open time'] = pd.to_datetime(candle_df['Open time'], unit='ms')
         candle_df['Close time'] = pd.to_datetime(candle_df['Close time'], unit='ms')
         candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']]\
-             = candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']].astype('float')
+            = candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']].astype('float')
         return candle_df[[
             'Open time', 'Close time', 'Symbol', 'Interval', 'Open price', 'Close price',
             'High price', 'Low price', 'Base asset volume', 'Number of trades']]
@@ -168,7 +168,7 @@ class Exchange:
         candle_df['Open time'] = pd.to_datetime(candle_df['Open time'], unit='ms')
         candle_df['Close time'] = pd.to_datetime(candle_df['Close time'], unit='ms')
         candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']]\
-             = candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']].astype('float')
+            = candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']].astype('float')
         candle_df['Symbol'] = symbol
         candle_df['Interval'] = interval
         candle_df['Kline closed?'] = True
