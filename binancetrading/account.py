@@ -53,7 +53,7 @@ class Account:
             self.position = self.get_coin_balance(coin)
             self.cash_position = self.get_coin_balance('USDT')
 
-    def account_balance(self) -> pd.DataFrame:
+    def account_balances(self) -> pd.DataFrame:
         """Get current account balances from binance."""
         acc_df = pd.DataFrame(self.client.account()['balances'])
         acc_df[['free', 'locked']] = acc_df[['free', 'locked']].astype(float)
@@ -63,8 +63,12 @@ class Account:
 
     def get_coin_balance(self, coin: str) -> float:
         """Get balance of specific coin."""
-        acc_df = self.account_balance()
-        return float(acc_df.loc[acc_df['Asset'] == coin, 'Free'])
+        acc_df = self.account_balances()
+        try:
+            balance = float(acc_df.loc[acc_df['Asset'] == coin, 'Free'])
+        except TypeError:
+            balance = 0
+        return balance
 
     def refresh_positions(self, side, price, qty, commission) -> None:
         """Given an order, modify positions accordingly."""

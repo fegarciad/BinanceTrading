@@ -3,20 +3,18 @@
 
 import sys
 import time
+
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from Models.account import Account
-from Models.exchange import Exchange
-from Models.strategies import TradingStrategy
-from Models.trading_bot import TradingBot
+import binancetrading as bt
 
 
 class Backtest:
     """Backtest class."""
 
-    def __init__(self, account: Account, exchange: Exchange, tradingbot: TradingBot, strategy: TradingStrategy, periods: int) -> None:
+    def __init__(self, account: bt.Account, exchange: bt.Exchange, tradingbot: bt.TradingBot, strategy: bt.TradingStrategy, periods: int) -> None:
         self.account = account
         self.exchange = exchange
         self.strategy = strategy
@@ -56,8 +54,8 @@ class Backtest:
             live_data = data.iloc[:i]
             if log_candles:
                 self.account.log_to_file('\n' + live_data.to_string(index=False))
-            sig = self.tradingbot.exec_strategy(live_data)
-            if sig:
+            signal = self.tradingbot.exec_strategy(live_data)
+            if signal:
                 self.account.trades[-1]['Time'] = live_data.iloc[-1]['Close time']
 
         msg = f'\nNumber of trades: {len(self.account.trades)}'

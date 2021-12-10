@@ -1,8 +1,8 @@
 
 """Exchange Class"""
 
-import time
 import threading
+import time
 from typing import Callable
 
 import pandas as pd
@@ -12,14 +12,13 @@ from matplotlib.animation import FuncAnimation
 from binance.error import ClientError
 from binance.websocket.spot.websocket_client import SpotWebsocketClient
 
-from Models.account import Account
-from Models.orders import MarketOrder, PaperOrder
+import binancetrading as bt
 
 
 class Exchange:
     """Exchange class."""
 
-    def __init__(self, account: Account, commission: float = 0.00075, wsurl: str = 'wss://stream.binance.com:9443/ws') -> None:
+    def __init__(self, account: bt.Account, commission: float = 0.00075, wsurl: str = 'wss://stream.binance.com:9443/ws') -> None:
         self.account = account
         self.websocketclient = SpotWebsocketClient(stream_url=wsurl)
         self.commission = commission
@@ -32,9 +31,9 @@ class Exchange:
         try:
             if not paper_trade:
                 confirmation = self.account.client.new_order(**params)
-                order = MarketOrder(confirmation, self.commission)
+                order = bt.MarketOrder(confirmation, self.commission)
             else:
-                order = PaperOrder(params, self.commission)
+                order = bt.PaperOrder(params, self.commission)
                 order.set_price(float(self.account.client.ticker_price(symbol)['price']))
                 self.check_paper_order(order.side, order.price, order.qty)
             self.account.trades.append(order.order_dict)
@@ -130,10 +129,10 @@ class Exchange:
             'Open time', 'Close time', 'Symbol', 'Interval', 'Open price', 'Close price',
             'High price', 'Low price', 'Base asset volume', 'Number of trades']]
 
-    def candledata_to_list(self, candledata: list[list], symbol: str, interval: str) -> list[dict]:
+    def candledata_to_list(self, candle_data: list[list], symbol: str, interval: str) -> list[dict]:
         """Convert candlesticks historic table to candlestick list of dictionaries."""
-        candlelist = []
-        for candle in candledata:
+        candle_list = []
+        for candle in candle_data:
             candle_dict = {
                 "t": candle[0],   # Kline start time
                 "T": candle[6],   # Kline close time
@@ -153,8 +152,8 @@ class Exchange:
                 "Q": candle[10],  # Taker buy quote asset volume
                 "B": candle[11]   # Ignore
             }
-            candlelist.append(candle_dict)
-        return candlelist
+            candle_list.append(candle_dict)
+        return candle_list
 
     def candledata_to_df(self, candledata: list[list], symbol: str, interval: str) -> pd.DataFrame:
         """Convert candlesticks historic table to DataFrame."""
