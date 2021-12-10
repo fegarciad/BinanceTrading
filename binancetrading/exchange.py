@@ -12,13 +12,14 @@ from matplotlib.animation import FuncAnimation
 from binance.error import ClientError
 from binance.websocket.spot.websocket_client import SpotWebsocketClient
 
-import binancetrading as bt
+from binancetrading.account import Account
+from binancetrading.orders import MarketOrder, PaperOrder
 
 
 class Exchange:
     """Exchange class."""
 
-    def __init__(self, account: bt.Account, commission: float = 0.00075, wsurl: str = 'wss://stream.binance.com:9443/ws') -> None:
+    def __init__(self, account: Account, commission: float = 0.00075, wsurl: str = 'wss://stream.binance.com:9443/ws') -> None:
         self.account = account
         self.websocketclient = SpotWebsocketClient(stream_url=wsurl)
         self.commission = commission
@@ -31,9 +32,9 @@ class Exchange:
         try:
             if not paper_trade:
                 confirmation = self.account.client.new_order(**params)
-                order = bt.MarketOrder(confirmation, self.commission)
+                order = MarketOrder(confirmation, self.commission)
             else:
-                order = bt.PaperOrder(params, self.commission)
+                order = PaperOrder(params, self.commission)
                 order.set_price(float(self.account.client.ticker_price(symbol)['price']))
                 self.check_paper_order(order.side, order.price, order.qty)
             self.account.trades.append(order.order_dict)

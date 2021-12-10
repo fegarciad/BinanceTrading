@@ -8,13 +8,16 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 
-import binancetrading as bt
+from binancetrading.account import Account
+from binancetrading.exchange import Exchange
+from binancetrading.trading_bot import TradingBot
+from binancetrading.strategies import TradingStrategy
 
 
 class Backtest:
     """Backtest class."""
 
-    def __init__(self, account: bt.Account, exchange: bt.Exchange, tradingbot: bt.TradingBot, strategy: bt.TradingStrategy, periods: int) -> None:
+    def __init__(self, account: Account, exchange: Exchange, tradingbot: TradingBot, strategy: TradingStrategy, periods: int) -> None:
         self.account = account
         self.exchange = exchange
         self.strategy = strategy

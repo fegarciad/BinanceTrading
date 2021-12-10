@@ -5,16 +5,18 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-import binancetrading as bt
+from binancetrading.account import Account
+from binancetrading.exchange import Exchange
+from binancetrading.strategies import TradingStrategy
 
 
 @dataclass
 class TradingBot:
     """Trading bot class."""
 
-    account: bt.Account
-    exchange: bt.Exchange
-    strategy: bt.TradingStrategy
+    account: Account
+    exchange: Exchange
+    strategy: TradingStrategy
     coin: str
     order_size: float
     interval: str

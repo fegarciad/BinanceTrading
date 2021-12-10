@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-import binancetrading as bt
+from binancetrading.utils import ema, macd, sma, rsi
 
 
 class TradingStrategy(ABC):
@@ -52,7 +52,7 @@ class MACDStrategy(TradingStrategy):
         price_col = 'Close price'
 
         prices = data[[date_col, price_col]].sort_values(by=date_col).reset_index(drop=True)
-        macd_line, signal_line = bt.utils.macd(prices[price_col], period_long=self.period_long, period_short=self.period_short, period_signal=self.period_signal)
+        macd_line, signal_line = macd(prices[price_col], period_long=self.period_long, period_short=self.period_short, period_signal=self.period_signal)
         prices['MACD'] = macd_line
         prices['Signal'] = signal_line
 
@@ -110,7 +110,7 @@ class TMAStrategy(TradingStrategy):
         price_col = 'Close price'
 
         prices = data[[date_col, price_col]].sort_values(by=date_col).reset_index(drop=True)
-        long_ma, mid_ma, short_ma = bt.utils.ema(prices[price_col], self.period_long), bt.utils.ema(prices[price_col], self.period_mid), bt.utils.ema(prices[price_col], self.period_short)
+        long_ma, mid_ma, short_ma = ema(prices[price_col], self.period_long), ema(prices[price_col], self.period_mid), ema(prices[price_col], self.period_short)
         prices['Long'], prices['Middle'], prices['Short'] = long_ma, mid_ma, short_ma
 
         for _, row in prices.iterrows():

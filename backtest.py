@@ -20,7 +20,7 @@ def main(coin: str, order_size: float, interval: str, backtest_period: int) -> N
     account = bt.Account(API, SECRET, paper_trade=True, paper_position=0.01, paper_cash_position=1000)
     exchange = bt.Exchange(account)
 
-    strategy = bt.TMAStrategy(period_long=63, period_mid=42, period_short=21)
+    strategy = bt.strategies.TMAStrategy(period_long=63, period_mid=42, period_short=21)
     tradebot = bt.TradingBot(account, exchange, strategy, coin, order_size, interval, duration=0, profit=0, loss=0)
     backtest = bt.Backtest(account, exchange, tradebot, strategy, backtest_period)
     backtest.run_backtest()
@@ -28,5 +28,5 @@ def main(coin: str, order_size: float, interval: str, backtest_period: int) -> N
 
 
 if __name__ == '__main__':
-    args = bt.read_backtest_args()
+    args = bt.command_line.read_backtest_args()
     main(args['Coin'], args['Ordersize'], args['Interval'], args['Backtest period'])

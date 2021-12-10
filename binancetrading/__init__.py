@@ -1,10 +1,8 @@
-"""Binance trading library."""
+"""Custom Binance trading library."""
 
-import binancetrading.utils as utils
+import binancetrading.command_line as command_line
+import binancetrading.strategies as strategies
 from binancetrading.account import Account
 from binancetrading.backtest import Backtest
-from binancetrading.command_line import read_args, read_backtest_args
-from binancetrading.exchange import Exchange, TimedValue
-from binancetrading.orders import MarketOrder, PaperOrder
-from binancetrading.strategies import MACDStrategy, RandomStrategy, TMAStrategy, TradingStrategy
+from binancetrading.exchange import Exchange
 from binancetrading.trading_bot import TradingBot
