@@ -61,7 +61,7 @@ class TradingBot:
 
     def run(self) -> None:
         """Initialize portfolio, connecto to WebSocket and run strategy."""
-        log_msg(f'\nRunning {self.strategy}',verb=True)
+        log_msg(f'\nRunning {self.strategy}', verb=True)
         self.account.set_positions(self.coin, self.account.paper_position, self.account.paper_cash_position)
         self.account.value_positions(self.symbol, init=True)
         log_msg(f'\nSymbol: {self.symbol}\nInterval: {self.interval}\nOrdersize: {self.order_size}\nDuration: {self.duration}')

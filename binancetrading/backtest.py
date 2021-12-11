@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from binancetrading.account import Account, log_msg
-from binancetrading.exchange import Exchange
+from binancetrading.exchange import Exchange, candle_list_to_df
 from binancetrading.trading_bot import TradingBot
 from binancetrading.strategies import TradingStrategy
 
@@ -27,18 +27,21 @@ class Backtest:
         self.final_wealth: float = 0.0
         self.backtest_df: pd.DataFrame = pd.DataFrame()
 
+        self.account.set_positions(self.tradingbot.coin, self.account.paper_position, self.account.paper_cash_position)
+        self.account.value_positions(self.tradingbot.symbol, init=True)
+
         if not self.account.paper_trade:
-            log_msg('\nBacktest can only run in paper trading mode.',verb=True)
+            log_msg('\nBacktest can only run in paper trading mode.', verb=True)
             sys.exit(1)
 
         if self.backtest_periods < self.strategy.get_lookback():
-            log_msg(f'\nMore than {self.strategy.get_lookback()} periods are required to run {str(self.strategy)}.',verb=True)
+            log_msg(f'\nMore than {self.strategy.get_lookback()} periods are required to run {str(self.strategy)}.', verb=True)
             sys.exit(1)
 
     def get_hist_data(self) -> pd.DataFrame:
         """Get historic price data to backtest strategies."""
         data_list = self.exchange.init_candles(self.tradingbot.symbol, self.tradingbot.interval, self.backtest_periods)
-        data = self.exchange.candle_list_to_df(data_list)
+        data = candle_list_to_df(data_list)
         return data
 
     def run_backtest(self, log_candles: bool = False, plot: bool = False) -> float:
@@ -59,11 +62,11 @@ class Backtest:
                 self.account.trades[-1]['Time'] = live_data.iloc[-1]['Close time']
 
         log_msg(f'\nNumber of trades: {len(self.account.trades)}')
-        log_msg(pd.DataFrame(self.account.trades).to_string(index=False),verb=True)
+        log_msg(f'\n{pd.DataFrame(self.account.trades).to_string(index=False)}', verb=True)
         self.final_wealth = self.value_portfolio(data.iloc[-1]['Close price'])
         self.backtest_df = self.backtest_dataframe(live_data)
         self.account.value_positions(self.tradingbot.symbol)
-        log_msg(f'\nReturn of {str(self.strategy)}: {self.final_wealth - self.init_wealth:.2f} ({(self.final_wealth / self.init_wealth - 1) * 100:.2f}%)')
+        log_msg(f'\nReturn of {str(self.strategy)}: {self.final_wealth - self.init_wealth:.2f} ({(self.final_wealth / self.init_wealth - 1) * 100:.2f}%)', verb=True)
         if plot:
             self.plot_backtest()
         return self.final_wealth - self.init_wealth

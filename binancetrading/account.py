@@ -11,6 +11,7 @@ from binance.spot import Spot
 logging.basicConfig(filename=f'{time.strftime("%Y-%m-%d %H-%M", time.localtime())}.log',
                     level=logging.INFO, format='%(asctime)s %(message)s', filemode='w')
 
+
 def log_msg(msg: str, verb: bool = False) -> None:
     """Log messages to log file for later inspection."""
     logging.info('\n%s', msg)
@@ -86,7 +87,7 @@ class Account:
         if init:
             self.init_wealth = self.wealth
         if verbose:
-            log_msg(f'\n{symbol} position: {self.position:,.4f}\nCash position: {self.cash_position:,.2f}\nCommissions: {self.commissions:,.2f}\nTotal: {self.wealth:,.2f}',verb=True)
+            log_msg(f'\n{symbol} position: {self.position:,.4f}\nCash position: {self.cash_position:,.2f}\nCommissions: {self.commissions:,.2f}\nTotal: {self.wealth:,.2f}', verb=True)
 
     def check_profit_loss(self, symbol: str, profit: float, loss: float) -> tuple[bool, str]:
         """Check profit and loss targets, exit program if they are met."""
@@ -94,9 +95,9 @@ class Account:
         current_return = (self.wealth / self.init_wealth - 1) * 100
         print(f'\nCurrent return: {current_return:.4f}%')
         if current_return > profit:
-            log_msg(f'\nProfit target met at {current_return:.4f}%, exiting program.',verb=True)
+            log_msg(f'\nProfit target met at {current_return:.4f}%, exiting program.', verb=True)
             return True, 'Profit'
         if current_return < loss:
-            log_msg(f'\nStop loss met at {current_return:.4f}%, exiting program.',verb=True)
+            log_msg(f'\nStop loss met at {current_return:.4f}%, exiting program.', verb=True)
             return True, 'Loss'
         return False, ''

@@ -39,7 +39,7 @@ class Exchange:
                 self.check_paper_order(order.side, order.price, order.qty)
             self.account.trades.append(order.order_dict)
             self.account.refresh_positions(order.side, order.price, order.qty, order.commission)
-            log_msg('\n' + str(order),verb=True)
+            log_msg('\n' + str(order), verb=True)
         except ClientError as error:
             log_msg(f'\n{side} order could not be executed. {error.error_message} {error.status_code} {error.error_code}')
 
@@ -71,17 +71,17 @@ class Exchange:
             while self.connection.is_running and not self.event.is_set():
                 pass
         except KeyboardInterrupt:
-            log_msg('\nKeyboardInterrupt',verb=True)
+            log_msg('\nKeyboardInterrupt', verb=True)
             self.event.set()
         self.close_connection(symbol)
 
     def close_connection(self, symbol: str) -> None:
         """Close connection to WebSocket, print current positions and deals made this session."""
         print('\nClosing connection.')
-        log_msg(f'\nNumber of trades: {len(self.account.trades)}\n\n{pd.DataFrame(self.account.trades).to_string(index=False)}',verb=True)
+        log_msg(f'\nNumber of trades: {len(self.account.trades)}\n\n{pd.DataFrame(self.account.trades).to_string(index=False)}', verb=True)
         self.account.value_positions(symbol)
-        log_msg(f'\nReturn: {self.account.wealth - self.account.init_wealth:.2f} ({(self.account.wealth / self.account.init_wealth - 1) * 100:.2f}%)',verb=True)
-        log_msg(f'\nFinished at: {time.strftime("%Y-%m-%d %H:%M", time.localtime())}',verb=True)
+        log_msg(f'\nReturn: {self.account.wealth - self.account.init_wealth:.2f} ({(self.account.wealth / self.account.init_wealth - 1) * 100:.2f}%)', verb=True)
+        log_msg(f'\nFinished at: {time.strftime("%Y-%m-%d %H:%M", time.localtime())}', verb=True)
         self.websocketclient.stop()
 
     def init_candles(self, symbol: str, interval: str, lookback: int) -> list[dict]:
@@ -129,6 +129,7 @@ def refresh_candles(candle: dict, candlelist: list[dict], max_len: int = 10000) 
             changed = True
     return candlelist, changed
 
+
 def candle_list_to_df(candle_list: list[dict]) -> pd.DataFrame:
     """Convert list of candlesticks from WebSocket to DataFrame."""
     headers = [
@@ -144,6 +145,7 @@ def candle_list_to_df(candle_list: list[dict]) -> pd.DataFrame:
         = candle_df[['Close price', 'Open price', 'High price', 'Low price', 'Base asset volume']].astype('float')
     return candle_df[['Open time', 'Close time', 'Symbol', 'Interval', 'Open price', 'Close price',
                       'High price', 'Low price', 'Base asset volume', 'Number of trades']]
+
 
 def candle_data_to_list(candle_data: list[list], symbol: str, interval: str) -> list[dict]:
     """Convert candlesticks historic table to candlestick list of dictionaries."""
@@ -170,6 +172,7 @@ def candle_data_to_list(candle_data: list[list], symbol: str, interval: str) -> 
         }
         candle_list.append(candle_dict)
     return candle_list
+
 
 def candle_data_to_df(candledata: list[list], symbol: str, interval: str) -> pd.DataFrame:
     """Convert candlesticks historic table to DataFrame."""

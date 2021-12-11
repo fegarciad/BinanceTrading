@@ -17,7 +17,7 @@ SECRET = os.environ.get('BINANCE_SECRET')
 def main(coin: str, order_size: float, interval: str, backtest_period: int) -> None:
     """Main backtest function."""
 
-    account = bt.Account(API, SECRET, paper_trade=True, paper_position=0.01, paper_cash_position=1000)
+    account = bt.Account(API, SECRET, paper_trade=True, paper_position=0.1, paper_cash_position=10_000)
     exchange = bt.Exchange(account)
 
     strategy = bt.strategies.TMAStrategy(period_long=63, period_mid=42, period_short=21)
@@ -28,4 +28,4 @@ def main(coin: str, order_size: float, interval: str, backtest_period: int) -> N
 
 if __name__ == '__main__':
     args = bt.command_line.read_backtest_args()
-    main(args['Coin'], args['Ordersize'], args['Interval'], args['Backtest period'])
+    main(args['Coin'], args['Ordersize'], args['Interval'], args['Backtest window'])
