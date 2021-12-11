@@ -124,12 +124,6 @@ dmypy.json
 # Photos
 *.png
 
-# Extra
-Extra/
-
-# API Keys
-config.py
-
 # Batch files
 *.bat
 
@@ -139,3 +133,4 @@ config.py
 # Text files
 *.csv
 *.txt
+*.log

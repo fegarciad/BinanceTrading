@@ -1,12 +1,21 @@
 
 """Account Class"""
 
-import os
+import logging
 import time
 from dataclasses import dataclass
 
 import pandas as pd
 from binance.spot import Spot
+
+logging.basicConfig(filename=f'{time.strftime("%Y-%m-%d %H-%M", time.localtime())}.log',
+                    level=logging.INFO, format='%(asctime)s %(message)s', filemode='w')
+
+def log_msg(msg: str, verb: bool = False) -> None:
+    """Log messages to log file for later inspection."""
+    logging.info('\n%s', msg)
+    if verb:
+        print(msg)
 
 
 @dataclass
@@ -31,18 +40,7 @@ class Account:
         self.position: float = 0.0
         self.cash_position: float = 0.0
 
-        self.logfile = os.path.join(
-            os.getcwd(), f'{time.strftime("%Y-%m-%d %H-%M", time.localtime())}.log')
-        self.log_to_file(f'Started at: {time.strftime("%Y-%m-%d %H-%M", time.localtime())}', init=True)
-
-    def log_to_file(self, msg: str, init: bool = False) -> None:
-        """Log messages to log file for later inspection."""
-        if init:
-            with open(self.logfile, 'w') as file:
-                file.write(msg)
-        else:
-            with open(self.logfile, 'a+') as file:
-                file.write('\n' + msg)
+        log_msg(f'\nStarted at: {time.strftime("%Y-%m-%d %H-%M", time.localtime())}')
 
     def set_positions(self, coin: str, position: float, cash_position: float) -> None:
         """Initialize local portfolio to track orders and current positions."""
@@ -87,10 +85,8 @@ class Account:
         self.wealth = self.cash_position + price * self.position - self.commissions
         if init:
             self.init_wealth = self.wealth
-        msg = f'\n{symbol} position: {self.position:,.4f}\nCash position: {self.cash_position:,.2f}\nCommissions: {self.commissions:,.2f}\nTotal: {self.wealth:,.2f}'
         if verbose:
-            print(msg)
-            self.log_to_file(msg)
+            log_msg(f'\n{symbol} position: {self.position:,.4f}\nCash position: {self.cash_position:,.2f}\nCommissions: {self.commissions:,.2f}\nTotal: {self.wealth:,.2f}',verb=True)
 
     def check_profit_loss(self, symbol: str, profit: float, loss: float) -> tuple[bool, str]:
         """Check profit and loss targets, exit program if they are met."""
@@ -98,13 +94,9 @@ class Account:
         current_return = (self.wealth / self.init_wealth - 1) * 100
         print(f'\nCurrent return: {current_return:.4f}%')
         if current_return > profit:
-            msg = f'\nProfit target met at {current_return:.4f}%, exiting program.'
-            print(msg)
-            self.log_to_file(msg)
+            log_msg(f'\nProfit target met at {current_return:.4f}%, exiting program.',verb=True)
             return True, 'Profit'
         if current_return < loss:
-            msg = f'\nStop loss met at {current_return:.4f}%, exiting program.'
-            print(msg)
-            self.log_to_file(msg)
+            log_msg(f'\nStop loss met at {current_return:.4f}%, exiting program.',verb=True)
             return True, 'Loss'
         return False, ''

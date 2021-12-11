@@ -23,8 +23,7 @@ def main(coin: str, order_size: float, interval: str, backtest_period: int) -> N
     strategy = bt.strategies.TMAStrategy(period_long=63, period_mid=42, period_short=21)
     tradebot = bt.TradingBot(account, exchange, strategy, coin, order_size, interval, duration=0, profit=0, loss=0)
     backtest = bt.Backtest(account, exchange, tradebot, strategy, backtest_period)
-    backtest.run_backtest()
-    backtest.plot_backtest()
+    backtest.run_backtest(plot=True)
 
 
 if __name__ == '__main__':

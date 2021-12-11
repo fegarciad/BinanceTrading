@@ -8,7 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from binancetrading.account import Account
+from binancetrading.account import Account, log_msg
 from binancetrading.exchange import Exchange
 from binancetrading.trading_bot import TradingBot
 from binancetrading.strategies import TradingStrategy
@@ -28,11 +28,11 @@ class Backtest:
         self.backtest_df: pd.DataFrame = pd.DataFrame()
 
         if not self.account.paper_trade:
-            print('\nBacktest can only run in paper trading mode.')
+            log_msg('\nBacktest can only run in paper trading mode.',verb=True)
             sys.exit(1)
 
         if self.backtest_periods < self.strategy.get_lookback():
-            print(f'\nMore than {self.strategy.get_lookback()} periods are required to run {str(self.strategy)}.')
+            log_msg(f'\nMore than {self.strategy.get_lookback()} periods are required to run {str(self.strategy)}.',verb=True)
             sys.exit(1)
 
     def get_hist_data(self) -> pd.DataFrame:
@@ -41,37 +41,31 @@ class Backtest:
         data = self.exchange.candle_list_to_df(data_list)
         return data
 
-    def run_backtest(self, log_candles: bool = False) -> float:
+    def run_backtest(self, log_candles: bool = False, plot: bool = False) -> float:
         """Execute backtest on strategy."""
-        self.account.log_to_file('############\n# BACKTEST #\n############', init=True)
-        msg = f'\nRunning Backest on {str(self.strategy)}, {self.backtest_periods} Data Points'
-        print(msg)
-        self.account.log_to_file(msg)
-        self.account.log_to_file(f'\nStarted at: {time.strftime("%Y-%m-%d %H:%M", time.localtime())}')
-        self.account.log_to_file(f'\nSymbol: {self.tradingbot.symbol}\nInterval: {self.tradingbot.interval}\nOrdersize: {self.tradingbot.order_size}')
-        self.account.log_to_file(f'\nTake profit: {self.tradingbot.profit}%\nStop Loss: {self.tradingbot.profit}%')
+        log_msg(f'############\n# BACKTEST #\n############\n\nRunning Backest on {str(self.strategy)}, {self.backtest_periods} Data Points')
+        log_msg(f'\nStarted at: {time.strftime("%Y-%m-%d %H:%M", time.localtime())}')
+        log_msg(f'\nSymbol: {self.tradingbot.symbol}\nInterval: {self.tradingbot.interval}\nOrdersize: {self.tradingbot.order_size}')
+        log_msg(f'\nTake profit: {self.tradingbot.profit}%\nStop Loss: {self.tradingbot.profit}%')
         data = self.get_hist_data()
         self.init_wealth = self.value_portfolio(data.iloc[0]['Open price'])
 
         for i in range(self.strategy.get_lookback() + 1, data.shape[0]):
             live_data = data.iloc[:i]
             if log_candles:
-                self.account.log_to_file('\n' + live_data.to_string(index=False))
+                log_msg('\n' + live_data.to_string(index=False))
             signal = self.tradingbot.exec_strategy(live_data)
             if signal:
                 self.account.trades[-1]['Time'] = live_data.iloc[-1]['Close time']
 
-        msg = f'\nNumber of trades: {len(self.account.trades)}'
-        print(msg)
-        self.account.log_to_file(msg)
-        print(pd.DataFrame(self.account.trades))
-        self.account.log_to_file(pd.DataFrame(self.account.trades).to_string(index=False))
+        log_msg(f'\nNumber of trades: {len(self.account.trades)}')
+        log_msg(pd.DataFrame(self.account.trades).to_string(index=False),verb=True)
         self.final_wealth = self.value_portfolio(data.iloc[-1]['Close price'])
         self.backtest_df = self.backtest_dataframe(live_data)
         self.account.value_positions(self.tradingbot.symbol)
-        msg = f'\nReturn of {str(self.strategy)}: {self.final_wealth - self.init_wealth:.2f} ({(self.final_wealth / self.init_wealth - 1) * 100:.2f}%)'
-        print(msg)
-        self.account.log_to_file(msg)
+        log_msg(f'\nReturn of {str(self.strategy)}: {self.final_wealth - self.init_wealth:.2f} ({(self.final_wealth / self.init_wealth - 1) * 100:.2f}%)')
+        if plot:
+            self.plot_backtest()
         return self.final_wealth - self.init_wealth
 
     def value_portfolio(self, price: float) -> float:
@@ -91,7 +85,7 @@ class Backtest:
         backtest_df['SELL'] = backtest_df.loc[backtest_df['Side'] == 'SELL', 'Close price']
         return backtest_df
 
-    def plot_backtest(self) -> None:
+    def plot_backtest(self, save: bool = False) -> None:
         """Plot price chart, entry and exit signals."""
         _, axis = plt.subplots(1, 1, figsize=(12, 10))
         axis.plot(self.backtest_df['Close time'], self.backtest_df['Close price'], zorder=1)
@@ -102,5 +96,6 @@ class Backtest:
         axis.set_title(title, fontsize=30, y=1.03, loc='center', wrap=True)
         axis.legend(fontsize=15)
         axis.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
-        plt.savefig('Images//' + title + '.png')
+        if save:
+            plt.savefig(title + '.png')
         plt.show()
