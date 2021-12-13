@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 from binance.error import ClientError
+from binance.spot import Spot
 from binance.websocket.spot.websocket_client import SpotWebsocketClient
 
 from binancetrading.account import Account, log_msg
@@ -19,46 +20,69 @@ from binancetrading.orders import MarketOrder, PaperOrder
 class Exchange:
     """Exchange class."""
 
-    def __init__(self, account: Account, commission: float = 0.00075, wsurl: str = 'wss://stream.binance.com:9443/ws') -> None:
-        self.account = account
+    def __init__(self, wsurl: str = 'wss://stream.binance.com:9443/ws') -> None:
         self.websocketclient = SpotWebsocketClient(stream_url=wsurl)
-        self.commission = commission
         self.event = threading.Event()
         self.connection: TimedValue = TimedValue(0)
 
-    def execute_order(self, symbol: str, side: str, ammount: float, paper_trade: bool) -> None:
+    def execute_order(self, account: Account, symbol: str, side: str, ammount: float, commission: float, paper_trade: bool) -> None:
         """Send market execution order to Binance or execute paper trade."""
         params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": str(ammount)}
         try:
             if not paper_trade:
-                confirmation = self.account.client.new_order(**params)
-                order = MarketOrder(confirmation, self.commission)
+                confirmation = account.client.new_order(**params)
+                order = MarketOrder(confirmation, commission)
             else:
-                order = PaperOrder(params, self.commission)
-                order.set_price(float(self.account.client.ticker_price(symbol)['price']))
-                self.check_paper_order(order.side, order.price, order.qty)
-            self.account.trades.append(order.order_dict)
-            self.account.refresh_positions(order.side, order.price, order.qty, order.commission)
+                order = PaperOrder(params, commission)
+                order.set_price(float(account.client.ticker_price(symbol)['price']))
+                self._check_paper_order(account, order.side, order.price, order.qty)
+            account.trades.append(order.order_dict)
+            account._refresh_positions(order.side, order.price, order.qty, order.commission)
             log_msg('\n' + str(order), verb=True)
         except ClientError as error:
             log_msg(f'\n{side} order could not be executed. {error.error_message} {error.status_code} {error.error_code}')
 
-    def check_paper_order(self, side: str, price: float, ammount: float) -> None:
+    def kline_df(self, coin: str, interval: str, lookback: int) -> pd.DataFrame:
+        """Return DataFrame with historic candlestick data."""
+        symbol = coin + 'USDT'
+        client = Spot()
+        kline_data = client.klines(symbol, interval, limit=lookback, endTime=int(time.time() * 1000 - 60000))
+        return _candle_data_to_df(kline_data, symbol, interval)
+
+    def live_chart(self, coin: str, interval: str, refreshrate: int = 2000) -> None:
+        """Plot live chart of selected coin."""
+        symbol = coin + 'USDT'
+        client = Spot()
+
+        def animate(_):
+            data = _candle_data_to_df(client.klines(symbol, interval, limit=120), symbol, interval)
+            plt.cla()
+            plt.plot(data['Close time'], data['Close price'])
+            plt.gcf().autofmt_xdate()
+            plt.gca().yaxis.set_major_formatter('{x:,.2f}')
+            plt.xlabel('Time')
+            plt.ylabel('Price')
+            plt.title(symbol, y=1.05, fontsize=16)
+        _ = FuncAnimation(plt.gcf(), animate, refreshrate)
+        plt.show()
+
+    def exit_positions(self, account: Account, symbol: str, paper_trade: bool) -> None:
+        """Exit positions of a coin."""
+        percentage_to_sell = 0.1
+        to_sell = account.position * percentage_to_sell
+        log_msg(f'\nExiting {1 - percentage_to_sell}% of {symbol} positions.')
+        self.execute_order(account, symbol, 'SELL', to_sell, 0.0, paper_trade)
+
+    def _check_paper_order(self, account: Account, side: str, price: float, ammount: float) -> None:
         """Check if a paper order can be executed based on current cash and coin positions."""
         if price * ammount <= 10:  # Minimum order size
             raise ClientError('', '', 'Order to small.', '')
-        if side == 'BUY' and self.account.cash_position < ammount * price:  # Check available funds
+        if side == 'BUY' and account.cash_position < ammount * price:  # Check available funds
             raise ClientError('', '', 'Not enough funds.', '')
-        if side == 'SELL' and self.account.position < ammount:  # Check available crypto currency
+        if side == 'SELL' and account.position < ammount:  # Check available crypto currency
             raise ClientError('', '', 'Not enough funds.', '')
 
-    def exit_positions(self, symbol: str, paper_trade: bool) -> None:
-        """Exit positions when returns hit stop loss."""
-        to_sell = self.account.position * 0.1
-        log_msg(f'\nExiting {symbol} positions.')
-        self.execute_order(symbol, 'SELL', to_sell, paper_trade)
-
-    def connect_ws(self, handler: Callable[[str], None], symbol: str, interval: str, duration: int) -> None:
+    def _connect_ws(self, account: Account, handler: Callable[[dict], None], symbol: str, interval: str, duration: int) -> None:
         """Connect to WebSocket."""
         self.websocketclient.start()
         self.websocketclient.kline(
@@ -73,48 +97,39 @@ class Exchange:
         except KeyboardInterrupt:
             log_msg('\nKeyboardInterrupt', verb=True)
             self.event.set()
-        self.close_connection(symbol)
+        self._close_connection(account, symbol)
 
-    def close_connection(self, symbol: str) -> None:
+    def _close_connection(self, account: Account, symbol: str) -> None:
         """Close connection to WebSocket, print current positions and deals made this session."""
         print('\nClosing connection.')
-        log_msg(f'\nNumber of trades: {len(self.account.trades)}\n\n{pd.DataFrame(self.account.trades).to_string(index=False)}', verb=True)
-        self.account.value_positions(symbol)
-        log_msg(f'\nReturn: {self.account.wealth - self.account.init_wealth:.2f} ({(self.account.wealth / self.account.init_wealth - 1) * 100:.2f}%)', verb=True)
+        log_msg(f'\nNumber of trades: {len(account.trades)}\n\n{pd.DataFrame(account.trades).to_string(index=False)}', verb=True)
+        account._value_positions(symbol)
+        log_msg(f'\nReturn: {account.wealth - account.init_wealth:.2f} ({(account.wealth / account.init_wealth - 1) * 100:.2f}%)', verb=True)
         log_msg(f'\nFinished at: {time.strftime("%Y-%m-%d %H:%M", time.localtime())}', verb=True)
         self.websocketclient.stop()
 
-    def init_candles(self, symbol: str, interval: str, lookback: int) -> list[dict]:
+    def _init_candles(self, symbol: str, interval: str, lookback: int) -> list[dict]:
         """Get historic data for strategies that need to look back to function."""
-        kline_data = self.account.client.klines(symbol, interval, limit=lookback, endTime=int(time.time() * 1000 - 60000))
-        return candle_data_to_list(kline_data, symbol, interval)
+        client = Spot()
+        kline_data = client.klines(symbol, interval, limit=lookback, endTime=int(time.time() * 1000 - 60000))
+        return _candle_data_to_list(kline_data, symbol, interval)
 
-    def kline_df(self, coin: str, interval: str, lookback: int) -> pd.DataFrame:
-        """Return DataFrame with historic candlestick data."""
-        symbol = coin + 'USDT'
-        kline_data = self.account.client.klines(symbol, interval, limit=lookback, endTime=int(time.time() * 1000 - 60000))
-        return candle_data_to_df(kline_data, symbol, interval)
-
-    def live_chart(self, coin: str, interval: str, refreshrate: int = 2000) -> None:
-        """Plot live chart of selected coin."""
-        symbol = coin + 'USDT'
-
-        def animate(_):
-            data = candle_data_to_df(self.account.client.klines(symbol, interval, limit=120), symbol, interval)
-            plt.cla()
-            plt.plot(data['Close time'], data['Close price'])
-            plt.gcf().autofmt_xdate()
-            plt.gca().yaxis.set_major_formatter('{x:,.2f}')
-            plt.xlabel('Time')
-            plt.ylabel('Price')
-            plt.title(symbol, y=1.05, fontsize=16)
-        _ = FuncAnimation(plt.gcf(), animate, refreshrate)
-        plt.show()
+    def _get_commission(self, account: Account, symbol: str) -> float:
+        """Get commission for a coin."""
+        # Try except needed because testnet has no commission atribute
+        try:
+            commission_list = account.client.trade_fee()
+        except ClientError:
+            return 0.0
+        for item in commission_list:
+            if item['symbol'] == symbol:
+                return item['takerCommission']
+        return 0.0
 
 
 # Helper functions to manipulate binance streaming data
 
-def refresh_candles(candle: dict, candlelist: list[dict], max_len: int = 10000) -> tuple[list[dict], bool]:
+def _refresh_candles(candle: dict, candlelist: list[dict], max_len: int = 10000) -> tuple[list[dict], bool]:
     """Recieve candlestick data and append to candlestick list if it is new candlestick."""
     changed = False
     if candle['k']['x']:
@@ -130,7 +145,7 @@ def refresh_candles(candle: dict, candlelist: list[dict], max_len: int = 10000) 
     return candlelist, changed
 
 
-def candle_list_to_df(candle_list: list[dict]) -> pd.DataFrame:
+def _candle_list_to_df(candle_list: list[dict]) -> pd.DataFrame:
     """Convert list of candlesticks from WebSocket to DataFrame."""
     headers = [
         'Open time', 'Close time', 'Symbol', 'Interval', 'First trade ID', 'Last trade ID',
@@ -147,7 +162,7 @@ def candle_list_to_df(candle_list: list[dict]) -> pd.DataFrame:
                       'High price', 'Low price', 'Base asset volume', 'Number of trades']]
 
 
-def candle_data_to_list(candle_data: list[list], symbol: str, interval: str) -> list[dict]:
+def _candle_data_to_list(candle_data: list[list], symbol: str, interval: str) -> list[dict]:
     """Convert candlesticks historic table to candlestick list of dictionaries."""
     candle_list = []
     for candle in candle_data:
@@ -174,7 +189,7 @@ def candle_data_to_list(candle_data: list[list], symbol: str, interval: str) -> 
     return candle_list
 
 
-def candle_data_to_df(candledata: list[list], symbol: str, interval: str) -> pd.DataFrame:
+def _candle_data_to_df(candledata: list[list], symbol: str, interval: str) -> pd.DataFrame:
     """Convert candlesticks historic table to DataFrame."""
     headers = [
         'Open time', 'Open price', 'High price', 'Low price',

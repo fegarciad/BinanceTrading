@@ -7,14 +7,15 @@ from dataclasses import dataclass
 
 import pandas as pd
 from binance.spot import Spot
+from binance.lib.utils import config_logging
 
-logging.basicConfig(filename=f'{time.strftime("%Y-%m-%d %H-%M", time.localtime())}.log',
-                    level=logging.INFO, format='%(asctime)s %(message)s', filemode='w')
-
+config_logging(logging, logging.INFO, log_file=f'{time.strftime("%Y-%m-%d %H-%M", time.localtime())}.log')
+LOG = False
 
 def log_msg(msg: str, verb: bool = False) -> None:
     """Log messages to log file for later inspection."""
-    logging.info('\n%s', msg)
+    if LOG:
+        logging.info(f'\n{msg}')
     if verb:
         print(msg)
 
@@ -43,15 +44,6 @@ class Account:
 
         log_msg(f'\nStarted at: {time.strftime("%Y-%m-%d %H-%M", time.localtime())}')
 
-    def set_positions(self, coin: str, position: float, cash_position: float) -> None:
-        """Initialize local portfolio to track orders and current positions."""
-        if self.paper_trade and not self.use_real_balance_as_paper:
-            self.position = position
-            self.cash_position = cash_position
-        else:
-            self.position = self.get_coin_balance(coin)
-            self.cash_position = self.get_coin_balance('USDT')
-
     def account_balances(self) -> pd.DataFrame:
         """Get current account balances from binance."""
         acc_df = pd.DataFrame(self.client.account()['balances'])
@@ -69,7 +61,16 @@ class Account:
             balance = 0
         return balance
 
-    def refresh_positions(self, side, price, qty, commission) -> None:
+    def _set_positions(self, coin: str, position: float, cash_position: float) -> None:
+        """Initialize local portfolio to track orders and current positions."""
+        if self.paper_trade and not self.use_real_balance_as_paper:
+            self.position = position
+            self.cash_position = cash_position
+        else:
+            self.position = self.get_coin_balance(coin)
+            self.cash_position = self.get_coin_balance('USDT')
+
+    def _refresh_positions(self, side, price, qty, commission) -> None:
         """Given an order, modify positions accordingly."""
         if side == 'BUY':
             self.position += qty
@@ -80,7 +81,7 @@ class Account:
             self.cash_position += qty * price
             self.commissions += qty * price * commission
 
-    def value_positions(self, symbol: str, init: bool = False, verbose: bool = True) -> None:
+    def _value_positions(self, symbol: str, init: bool = False, verbose: bool = True) -> None:
         """Value current positions."""
         price = float(self.client.ticker_price(symbol)['price'])
         self.wealth = self.cash_position + price * self.position - self.commissions
@@ -89,11 +90,11 @@ class Account:
         if verbose:
             log_msg(f'\n{symbol} position: {self.position:,.4f}\nCash position: {self.cash_position:,.2f}\nCommissions: {self.commissions:,.2f}\nTotal: {self.wealth:,.2f}', verb=True)
 
-    def check_profit_loss(self, symbol: str, profit: float, loss: float) -> tuple[bool, str]:
+    def _check_profit_loss(self, symbol: str, profit: float, loss: float) -> tuple[bool, str]:
         """Check profit and loss targets, exit program if they are met."""
-        self.value_positions(symbol, verbose=False)
+        self._value_positions(symbol, verbose=False)
         current_return = (self.wealth / self.init_wealth - 1) * 100
-        print(f'\nCurrent return: {current_return:.4f}%')
+        log_msg(f'\nCurrent return: {current_return:.4f}%')
         if current_return > profit:
             log_msg(f'\nProfit target met at {current_return:.4f}%, exiting program.', verb=True)
             return True, 'Profit'

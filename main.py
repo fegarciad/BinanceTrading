@@ -23,7 +23,7 @@ def main(coin: str, order_size: float, interval: str, duration: int, profit: flo
     """Main trading function."""
 
     account = bt.Account(API, SECRET, paper_trade, use_real_balance_as_paper=True, apiurl=APIURL)
-    exchange = bt.Exchange(account, wsurl=WSURL)
+    exchange = bt.Exchange(wsurl=WSURL)
 
     strategy = bt.strategies.RandomStrategy(upper=60, lower=40)
     tradebot = bt.TradingBot(account, exchange, strategy, coin, order_size, interval, duration, profit, loss)
