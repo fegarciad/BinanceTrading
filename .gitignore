@@ -131,6 +131,4 @@ dmypy.json
 *.ipynb
 
 # Text files
-*.csv
-*.txt
 *.log
