@@ -36,7 +36,7 @@ class TradingBot:
         if signal:
             self.exchange.execute_order(self.account, self.symbol, signal, self.order_size, self.exchange._get_commission(self.account, self.symbol), self.account.paper_trade)
         else:
-            log_msg('\nNo order was placed.')
+            log_msg('No order was placed.')
         return signal
 
     def _ws_handler(self, msg: dict) -> None:
@@ -61,9 +61,9 @@ class TradingBot:
 
     def run(self) -> None:
         """Initialize portfolio, connecto to WebSocket and run strategy."""
-        log_msg(f'\nRunning {self.strategy}', verb=True)
-        log_msg(f'\nSymbol: {self.symbol}\nInterval: {self.interval}\nOrdersize: {self.order_size}\nDuration: {self.duration}')
-        log_msg(f'\nTake profit: {self.profit}%\nStop loss: {self.loss}%')
+        log_msg(f'Running {self.strategy}', verb=True)
+        log_msg(f'Symbol: {self.symbol}\nInterval: {self.interval}\nOrdersize: {self.order_size}\nDuration: {self.duration}')
+        log_msg(f'Take profit: {self.profit}%\nStop loss: {self.loss}%')
         self.account._set_positions(self.coin, self.account.paper_position, self.account.paper_cash_position)
         self.account._value_positions(self.symbol, init=True)
         self.exchange._connect_ws(self.account, self._ws_handler, self.symbol, self.interval, self.duration)

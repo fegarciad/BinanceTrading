@@ -38,9 +38,9 @@ class Exchange:
                 self._check_paper_order(account, order.side, order.price, order.qty)
             account.trades.append(order.order_dict)
             account._refresh_positions(order.side, order.price, order.qty, order.commission)
-            log_msg('\n' + str(order), verb=True)
+            log_msg(str(order), verb=True)
         except ClientError as error:
-            log_msg(f'\n{side} order could not be executed. {error.error_message} {error.status_code} {error.error_code}')
+            log_msg(f'{side} order could not be executed. {error.error_message} {error.status_code} {error.error_code}', verb=True)
 
     def kline_df(self, coin: str, interval: str, lookback: int) -> pd.DataFrame:
         """Return DataFrame with historic candlestick data."""
@@ -70,7 +70,7 @@ class Exchange:
         """Exit positions of a coin."""
         percentage_to_sell = 0.1
         to_sell = account.position * percentage_to_sell
-        log_msg(f'\nExiting {1 - percentage_to_sell}% of {symbol} positions.')
+        log_msg(f'Exiting {1 - percentage_to_sell}% of {symbol} positions.')
         self.execute_order(account, symbol, 'SELL', to_sell, 0.0, paper_trade)
 
     def _check_paper_order(self, account: Account, side: str, price: float, ammount: float) -> None:
@@ -95,17 +95,17 @@ class Exchange:
             while self.connection.is_running and not self.event.is_set():
                 pass
         except KeyboardInterrupt:
-            log_msg('\nKeyboardInterrupt', verb=True)
+            log_msg('KeyboardInterrupt', verb=True)
             self.event.set()
         self._close_connection(account, symbol)
 
     def _close_connection(self, account: Account, symbol: str) -> None:
         """Close connection to WebSocket, print current positions and deals made this session."""
-        print('\nClosing connection.')
-        log_msg(f'\nNumber of trades: {len(account.trades)}\n\n{pd.DataFrame(account.trades).to_string(index=False)}', verb=True)
+        print('Closing connection.')
+        log_msg(f'Number of trades: {len(account.trades)}\n\n{pd.DataFrame(account.trades).to_string(index=False)}', verb=True)
         account._value_positions(symbol)
-        log_msg(f'\nReturn: {account.wealth - account.init_wealth:.2f} ({(account.wealth / account.init_wealth - 1) * 100:.2f}%)', verb=True)
-        log_msg(f'\nFinished at: {time.strftime("%Y-%m-%d %H:%M", time.localtime())}', verb=True)
+        log_msg(f'Return: {account.wealth - account.init_wealth:.2f} ({(account.wealth / account.init_wealth - 1) * 100:.2f}%)', verb=True)
+        log_msg(f'Finished at: {time.strftime("%Y-%m-%d %H:%M", time.localtime())}', verb=True)
         self.websocketclient.stop()
 
     def _init_candles(self, symbol: str, interval: str, lookback: int) -> list[dict]:
@@ -116,14 +116,13 @@ class Exchange:
 
     def _get_commission(self, account: Account, symbol: str) -> float:
         """Get commission for a coin."""
-        # Try except needed because testnet has no commission atribute
-        try:
+        try: # Try except needed because testnet has no commission atribute
             commission_list = account.client.trade_fee()
         except ClientError:
             return 0.0
         for item in commission_list:
             if item['symbol'] == symbol:
-                return item['takerCommission']
+                return float(item['takerCommission'])
         return 0.0
 
 
