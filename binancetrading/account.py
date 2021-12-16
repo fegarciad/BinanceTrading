@@ -101,7 +101,7 @@ class Account:
             log_msg(f'{symbol} position: {self.position:,.4f}\nCash position: {self.cash_position:,.2f}\nCommissions: {self.commissions:,.2f}\nTotal: {self.wealth:,.2f}', verb=True)
 
     def _check_profit_loss(self, symbol: str, profit: float, loss: float) -> tuple[bool, str]:
-        """Check profit and loss targets, exit program if they are met."""
+        """Check profit and loss targets, return boolean flag if they are met."""
         self._value_positions(symbol, verbose=False)
         current_return = (self.wealth / self.init_wealth - 1) * 100
         log_msg(f'Current return: {current_return:.4f}%')

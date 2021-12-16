@@ -2,16 +2,13 @@
 # Example Historic Candle Stick Data #
 ######################################
 
-import binancetrading as bt
-
-APIURL = 'https://api.binance.com'
-WSURL = 'wss://stream.binance.com:9443/ws'
+from binancetrading import Exchange
 
 COIN = 'BTC'
 INTERVAL = '1m'
 LOOKBACK = 10
 
-exchange = bt.Exchange(wsurl=WSURL)
+exchange = Exchange()
 data = exchange.kline_df(COIN, INTERVAL, LOOKBACK)
 
 print(data)
