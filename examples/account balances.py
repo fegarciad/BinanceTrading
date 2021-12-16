@@ -1,6 +1,6 @@
-##########################
-# Example Trading Script #
-##########################
+###################################
+# Example Account Balances Script #
+###################################
 
 import os
 from binancetrading import Account
