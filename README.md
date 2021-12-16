@@ -66,6 +66,8 @@ The backtesting module is to make an event driven trading strategy backtest. It 
 
 Include an strategy optimizer module to optimize the parameters of a trading strategy using backtest results.
 
+Make order size a percentage of current holdings or dependant on the trading strategy.
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
