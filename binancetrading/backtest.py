@@ -51,7 +51,7 @@ class Backtest:
         for i in range(self.tradingbot.strategy.get_lookback() + 1, data.shape[0]):
             live_data = data.iloc[:i]
             if log_candles:
-                log_msg('\n' + live_data.to_string(index=False))
+                log_msg(live_data.to_string(index=False))
             signal = self.tradingbot.execute_strategy(live_data)
             if signal:
                 self.tradingbot.account.trades[-1]['Time'] = live_data.iloc[-1]['Close time']
@@ -61,7 +61,7 @@ class Backtest:
         self.final_wealth = self._value_portfolio(data.iloc[-1]['Close price'])
         self.backtest_df = self._backtest_results_dataframe(live_data)
         self.tradingbot.account._value_positions(self.tradingbot.symbol)
-        log_msg(f'\nReturn of {str(self.tradingbot.strategy)}: {self.final_wealth - self.init_wealth:.2f} ({(self.final_wealth / self.init_wealth - 1) * 100:.2f}%)', verb=True)
+        log_msg(f'Return of {str(self.tradingbot.strategy)}: {self.final_wealth - self.init_wealth:.2f} ({(self.final_wealth / self.init_wealth - 1) * 100:.2f}%)', verb=True)
         if plot:
             self._plot_backtest_results()
         return self.final_wealth - self.init_wealth
@@ -84,7 +84,7 @@ class Backtest:
 
     def _plot_backtest_results(self, save: bool = False) -> None:
         """Plot price chart, entry and exit signals."""
-        _, axis = plt.subplots(1, 1, figsize=(12, 10))
+        _, axis = plt.subplots(1, 1, figsize=(10, 8))
         axis.plot(self.backtest_df['Close time'], self.backtest_df['Close price'], zorder=1)
         axis.scatter(self.backtest_df['Close time'], self.backtest_df['BUY'], color='green', label='Buy', marker='^', s=75, zorder=2)
         axis.scatter(self.backtest_df['Close time'], self.backtest_df['SELL'], color='red', label='Sell', marker='v', s=75, zorder=2)
